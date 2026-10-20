@@ -17,7 +17,7 @@ export function Logo() {
         <Gecko size={30} />
       </span>
       <div className="leading-tight">
-        <div className="text-[17px] font-extrabold tracking-tight">openspaces</div>
+        <div className="text-[17px] font-extrabold tracking-tight">Geckobox</div>
         <div className="text-[11px] text-mute">free · open source · no relay</div>
       </div>
     </div>

@@ -22,7 +22,7 @@ export function Computers({ computers, onChanged }: { computers: readonly Comput
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-[26px] font-semibold tracking-tight">Computers</h1>
         <p className="mt-1.5 text-[14px] text-dim">
-          Anything that can run a shell is a computer. openspaces connects to them directly — no relay, so no hour or session limits.
+          Anything that can run a shell is a computer. Geckobox connects to them directly — no relay, so no hour or session limits.
         </p>
         <Sandboxes onChanged={onChanged} />
         <h2 className="mt-10 text-[15px] font-semibold">Your computers</h2>

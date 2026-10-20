@@ -13,7 +13,7 @@ meet geckobox 🦎 every agent gets its own computer, free.
 open source (MIT) 👇
 
 === REPLY (link goes here, X pushes posts with links down) ===
-github.com/migasrias2/openspaces
+github.com/migasrias2/geckobox
 
 === SHORTER ALT ===
 said i wouldn't pay for a plan.

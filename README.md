@@ -1,4 +1,6 @@
-# openspaces
+# Geckobox
+
+<sub>The command-line tool and SDK are called `openspaces`.</sub>
 
 Put Claude Code, Codex or any coding agent on a computer you choose, and run jobs across all your computers at once. **Free, with no limits.**
 
@@ -16,7 +18,7 @@ Cua meters its relay. openspaces has no relay: it reaches your computers directl
 ## The app
 
 ```sh
-npm install -g github:migasrias2/openspaces
+npm install -g github:migasrias2/geckobox
 openspaces ui
 ```
 

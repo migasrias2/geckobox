@@ -15,7 +15,7 @@ export function Everywhere({ computers, onOpen }: { computers: readonly Computer
   const toggle = (name: string) => setPicked((p) => (p.includes(name) ? p.filter((n) => n !== name) : [...p, name]))
 
   return (
-    <div className="h-full min-w-0 flex-1 overflow-y-auto">
+    <div className="panel h-full min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-6 py-10">
         <div className="flex items-center gap-2 text-accent">
           <Globe2 className="size-5" />

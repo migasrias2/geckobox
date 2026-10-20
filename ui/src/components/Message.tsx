@@ -12,7 +12,7 @@ export function RichText({ text, mono = false }: { text: string; mono?: boolean 
     <div className="space-y-1 text-[14px] leading-relaxed">
       {parts.map((part, i) =>
         i % 2 === 1 ? (
-          <pre key={i} className="overflow-x-auto rounded-xl border border-line bg-bg p-3 font-mono text-[12.5px] text-ink">
+          <pre key={i} className="overflow-x-auto rounded-2xl border border-line bg-bg p-3 font-mono text-[12.5px] text-ink">
             {part.replace(/\n$/, "")}
           </pre>
         ) : (
@@ -89,7 +89,7 @@ export function toBlocks(events: readonly ThreadEvent[], agent: AgentName): Bloc
 }
 
 /** `mcp__cua__space_bash` → `cua · space_bash`. */
-function prettyTool(name: string): string {
+export function prettyTool(name: string): string {
   const m = /^mcp__([^_]+(?:_[^_]+)*?)__(.+)$/.exec(name)
   return m ? `${m[1]} · ${m[2]}` : name
 }
@@ -118,7 +118,7 @@ function Logs({ lines }: { lines: readonly string[] }) {
         <Terminal className="size-3.5" /> {lines.length} log line{lines.length === 1 ? "" : "s"}
       </button>
       {open && (
-        <pre className="mt-1.5 max-h-56 overflow-auto rounded-xl border border-line bg-bg p-3 font-mono text-[11.5px] leading-relaxed text-dim">
+        <pre className="mt-1.5 max-h-56 overflow-auto rounded-2xl border border-line bg-bg p-3 font-mono text-[11.5px] leading-relaxed text-dim">
           {lines.join("\n")}
         </pre>
       )}
@@ -129,7 +129,7 @@ function Logs({ lines }: { lines: readonly string[] }) {
 export function UserBubble({ text }: { text: string }) {
   return (
     <div className="rise flex justify-end">
-      <div className="max-w-[78%] rounded-2xl rounded-br-md border border-accent/25 bg-accent/12 px-4 py-2.5 text-[14px] leading-relaxed text-ink">
+      <div className="max-w-[78%] rounded-[22px] rounded-br-md border border-accent/25 bg-accent/12 px-4 py-2.5 text-[14px] leading-relaxed text-ink">
         <span className="whitespace-pre-wrap break-words">{text}</span>
       </div>
     </div>
@@ -146,7 +146,7 @@ export function AgentTurn({ turn, events, agent, liveTool }: { turn: TurnRecord;
       <div className="min-w-0 flex-1 space-y-2.5 pt-0.5">
         {blocks.map((b, i) =>
           b.kind === "text" ? (
-            <div key={i} className="max-w-[92%] rounded-2xl rounded-tl-md border border-line bg-raised px-4 py-3">
+            <div key={i} className="max-w-[92%] rounded-[22px] rounded-tl-md border border-line bg-raised px-4 py-3">
               <RichText text={b.text} mono={agent === "shell"} />
             </div>
           ) : b.kind === "tools" ? (
@@ -156,7 +156,7 @@ export function AgentTurn({ turn, events, agent, liveTool }: { turn: TurnRecord;
           ),
         )}
         {!running && !hasText && turn.ok && turn.text ? (
-          <div className="max-w-[92%] rounded-2xl rounded-tl-md border border-line bg-raised px-4 py-3">
+          <div className="max-w-[92%] rounded-[22px] rounded-tl-md border border-line bg-raised px-4 py-3">
             <RichText text={turn.text} mono={agent === "shell"} />
           </div>
         ) : null}
@@ -175,7 +175,7 @@ function TurnFooter({ turn, liveTool }: { turn: TurnRecord; liveTool?: string })
             <span key={i} className="size-1.5 animate-bounce rounded-full bg-accent" style={{ animationDelay: `${i * 120}ms` }} />
           ))}
         </span>
-        Working{liveTool ? ` · ${liveTool}` : ""} · {duration(turn.startedAt)}
+        Working{liveTool ? ` · ${prettyTool(liveTool)}` : ""} · {duration(turn.startedAt)}
       </div>
     )
   }
@@ -188,7 +188,7 @@ function TurnFooter({ turn, liveTool }: { turn: TurnRecord; liveTool?: string })
     )
   }
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-danger/25 bg-danger/8 px-3 py-2 text-[13px] text-danger">
+    <div className="flex items-start gap-2 rounded-2xl border border-danger/25 bg-danger/8 px-3 py-2 text-[13px] text-danger">
       <CircleAlert className="mt-0.5 size-4 shrink-0" />
       <span className="whitespace-pre-wrap break-words">{turn.error || "The turn failed"}</span>
     </div>

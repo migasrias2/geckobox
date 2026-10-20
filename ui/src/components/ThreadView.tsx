@@ -1,40 +1,46 @@
-import { PanelRight } from "lucide-react"
+import { Info, Monitor } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../lib/api"
 import { AGENT_LABEL, isBusy, title } from "../lib/format"
 import { useThread } from "../lib/useThread"
+import { moodOf } from "./BotFace"
 import { Composer } from "./Composer"
-import { DesktopPane } from "./DesktopPane"
 import { DetailsPanel } from "./DetailsPanel"
+import type { AgentPoint } from "./LiveScreen"
 import { AgentTurn, UserBubble } from "./Message"
-import { AgentAvatar, Skeleton, StatusPill } from "./ui"
+import { ScreenPane } from "./ScreenPane"
+import { AgentAvatar, cx, Skeleton, StatusPill } from "./ui"
+
+const RECENT_MS = 4000
 
 export function ThreadView({ id, onChanged }: { id: string; onChanged: () => void }) {
   const { thread, events, error, refresh } = useThread(id)
-  const [details, setDetails] = useState(true)
-  const [desktop, setDesktop] = useState(false)
+  const [side, setSide] = useState<"computer" | "details">("computer")
   const bottom = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    setDesktop(false)
-  }, [id])
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" })
   }, [events.length, thread?.turns.length])
 
-  const byTurn = useMemo(() => {
-    return events.reduce<Record<number, typeof events>>((acc, e) => ({ ...acc, [e.turn]: [...(acc[e.turn] ?? []), e] }), {})
-  }, [events])
+  const byTurn = useMemo(
+    () => events.reduce<Record<number, typeof events>>((acc, e) => ({ ...acc, [e.turn]: [...(acc[e.turn] ?? []), e] }), {}),
+    [events],
+  )
 
-  if (error && !thread) return <Empty text={error} />
+  if (error && !thread) return <div className="panel grid flex-1 place-items-center text-[14px] text-dim">{error}</div>
   if (!thread) return <Loading />
 
-  // On "local", an agent may drive a Cua computer through its MCP tools: show that one.
-  const usedTargets = [...new Set(events.flatMap((e) => (e.type === "tool" && e.target ? [e.target] : [])))]
-  const desktopOn = thread.computer.kind === "local" && usedTargets.length > 0 ? `cua:${usedTargets.at(-1)}` : thread.on
   const busy = isBusy(thread.status)
   const closed = thread.status === "closed"
-  const liveTool = [...events].reverse().find((e) => e.type === "tool")
+  const tools = events.filter((e) => e.type === "tool")
+  const liveTool = tools.at(-1)
+  // On "local", an agent may drive a Cua computer through its tools: watch that one.
+  const targets = [...new Set(tools.flatMap((e) => (e.type === "tool" && e.target ? [e.target] : [])))]
+  const screenOn = thread.computer.kind === "local" && targets.length > 0 ? `cua:${targets.at(-1)}` : thread.on
+  const now = Date.now()
+  const points: AgentPoint[] = tools.flatMap((e) =>
+    e.type === "tool" && e.point && now - Date.parse(e.at) < RECENT_MS ? [{ key: `${e.at}-${e.point.x}-${e.point.y}`, ...e.point }] : [],
+  )
   const act = async (fn: () => Promise<unknown>) => {
     await fn().catch(() => undefined)
     await refresh()
@@ -42,26 +48,33 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-1">
-      <section className={desktop ? "flex h-full w-[440px] shrink-0 flex-col" : "flex h-full min-w-0 flex-1 flex-col"}>
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-5">
-          <AgentAvatar agent={thread.agent} size={28} busy={busy} />
+    <div className="flex h-full min-w-0 flex-1 gap-2.5">
+      <section className="panel flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-3 px-5">
+          <AgentAvatar agent={thread.agent} size={34} mood={moodOf(thread.status, thread.turns.length > 0)} />
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[14px] font-medium">{title(thread)}</div>
-            <div className="truncate text-[11.5px] text-mute">
-              {AGENT_LABEL[thread.agent]} on {thread.on}
+            <div className="truncate text-[15px] font-bold">{title(thread)}</div>
+            <div className="truncate text-[12px] text-mute">
+              {AGENT_LABEL[thread.agent]} · {thread.on}
             </div>
           </div>
           <StatusPill status={thread.status} />
-          {!details && (
-            <button onClick={() => setDetails(true)} className="rounded-lg p-2 text-mute hover:bg-hover hover:text-ink" aria-label="Show details">
-              <PanelRight className="size-4" />
-            </button>
-          )}
+          <div className="flex rounded-full bg-raised p-1">
+            {(["computer", "details"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setSide(tab)}
+                aria-label={tab === "computer" ? "Show computer" : "Show details"}
+                className={cx("grid size-8 place-items-center rounded-full transition", side === tab ? "bg-hover text-accent" : "text-mute hover:text-ink")}
+              >
+                {tab === "computer" ? <Monitor className="size-4" /> : <Info className="size-4" />}
+              </button>
+            ))}
+          </div>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
+          <div className="mx-auto max-w-2xl space-y-6 px-6 py-6">
             {thread.turns.map((turn) => (
               <div key={turn.index} className="space-y-4">
                 <UserBubble text={turn.prompt} />
@@ -77,10 +90,10 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
           </div>
         </div>
 
-        <div className="shrink-0 px-6 pb-5 pt-2">
-          <div className="mx-auto max-w-3xl">
+        <div className="shrink-0 px-5 pb-5 pt-2">
+          <div className="mx-auto max-w-2xl">
             <Composer
-              placeholder={`Message ${AGENT_LABEL[thread.agent]} on ${thread.on}…`}
+              placeholder={`Message ${AGENT_LABEL[thread.agent]}…`}
               disabled={busy || closed}
               disabledHint={closed ? "This thread is closed" : "Working… you can send the next message when it's done"}
               onSubmit={async (text) => {
@@ -93,12 +106,19 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
         </div>
       </section>
 
-      {desktop && <DesktopPane on={desktopOn} onClose={() => setDesktop(false)} />}
-      {details && !desktop && (
+      {side === "computer" ? (
+        <ScreenPane
+          on={screenOn}
+          agentLabel={AGENT_LABEL[thread.agent]}
+          busy={busy}
+          points={points}
+          onPause={() => void act(() => api.interrupt(id))}
+        />
+      ) : (
         <DetailsPanel
           thread={thread}
-          onHide={() => setDetails(false)}
-          onDesktop={() => setDesktop(true)}
+          onHide={() => setSide("computer")}
+          onDesktop={() => setSide("computer")}
           onInterrupt={() => void act(() => api.interrupt(id))}
           onCloseThread={() => void act(() => api.close(id))}
         />
@@ -109,14 +129,10 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
 
 function Loading() {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 px-6 py-20">
+    <div className="panel flex-1 space-y-5 px-10 py-20">
       <Skeleton className="ml-auto h-12 w-2/3" />
       <Skeleton className="h-24 w-4/5" />
       <Skeleton className="ml-auto h-10 w-1/2" />
     </div>
   )
-}
-
-function Empty({ text }: { text: string }) {
-  return <div className="grid flex-1 place-items-center text-[14px] text-dim">{text}</div>
 }

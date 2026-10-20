@@ -1,7 +1,7 @@
 import { Box, Check, Cloud, Laptop, Monitor, Plus, Server, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { api, type Computer, type ComputerTest } from "../lib/api"
-import { DesktopPane } from "./DesktopPane"
+import { ScreenPane } from "./ScreenPane"
 import { Sandboxes } from "./Sandboxes"
 import { Button, Card, cx } from "./ui"
 
@@ -15,9 +15,9 @@ const ICON = { local: Laptop, ssh: Server, container: Box, docker: Box, podman: 
 
 export function Computers({ computers, onChanged }: { computers: readonly Computer[] | undefined; onChanged: () => void }) {
   const [viewing, setViewing] = useState<string | undefined>()
-  if (viewing) return <DesktopPane on={viewing} onClose={() => setViewing(undefined)} />
+  if (viewing) return <ScreenPane wide on={viewing} agentLabel="Nobody" busy={false} onClose={() => setViewing(undefined)} />
   return (
-    <div className="h-full min-w-0 flex-1 overflow-y-auto">
+    <div className="panel h-full min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-[26px] font-semibold tracking-tight">Computers</h1>
         <p className="mt-1.5 text-[14px] text-dim">
@@ -53,7 +53,7 @@ function ComputerCard({ computer, onView, onRemoved }: { computer: Computer; onV
   return (
     <Card className="rise p-4">
       <div className="flex items-center gap-3.5">
-        <span className="grid size-11 place-items-center rounded-xl border border-line bg-raised">
+        <span className="grid size-11 place-items-center rounded-2xl border border-line bg-raised">
           <Icon className="size-5 text-accent" />
         </span>
         <div className="min-w-0 flex-1">
@@ -139,9 +139,9 @@ function AddComputer({ onAdded }: { onAdded: () => void }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Name, e.g. mac-mini"
-          className="h-10 w-44 rounded-xl border border-line bg-raised px-3 text-[13.5px] outline-none placeholder:text-mute focus:border-accent/50"
+          className="h-10 w-44 rounded-2xl border border-line bg-raised px-3 text-[13.5px] outline-none placeholder:text-mute focus:border-accent/50"
         />
-        <div className="flex h-10 min-w-[220px] flex-1 items-center rounded-xl border border-line bg-raised pl-3 focus-within:border-accent/50">
+        <div className="flex h-10 min-w-[220px] flex-1 items-center rounded-2xl border border-line bg-raised pl-3 focus-within:border-accent/50">
           <span className="font-mono text-[12.5px] text-mute">{kind.prefix}</span>
           <input
             value={target}

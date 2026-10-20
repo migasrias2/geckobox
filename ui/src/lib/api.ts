@@ -32,7 +32,7 @@ export interface Thread {
 }
 export type ThreadEvent =
   | { readonly at: string; readonly turn: number; readonly type: "text"; readonly text: string }
-  | { readonly at: string; readonly turn: number; readonly type: "tool"; readonly name: string; readonly target?: string }
+  | { readonly at: string; readonly turn: number; readonly type: "tool"; readonly name: string; readonly target?: string; readonly point?: { readonly x: number; readonly y: number } }
   | { readonly at: string; readonly turn: number; readonly type: "stderr"; readonly text: string }
   | { readonly at: string; readonly turn: number; readonly type: "session"; readonly sessionId: string }
   | { readonly at: string; readonly turn: number; readonly type: "result"; readonly ok: boolean; readonly text: string }
@@ -41,6 +41,21 @@ export type ViewResult =
   | { readonly kind: "embed"; readonly url: string }
   | { readonly kind: "external"; readonly url: string }
   | { readonly kind: "self"; readonly message: string }
+
+export interface ScreenFrame {
+  readonly seq: number
+  readonly at?: number
+  readonly width?: number
+  readonly height?: number
+  readonly cursor?: { readonly x: number; readonly y: number }
+  readonly image?: string
+  readonly error?: string
+}
+export type ScreenInput =
+  | { readonly action: "click" | "double_click" | "right_click" | "move"; readonly x: number; readonly y: number }
+  | { readonly action: "type"; readonly text: string }
+  | { readonly action: "key"; readonly key: string }
+  | { readonly action: "scroll"; readonly x: number; readonly y: number; readonly direction: "up" | "down"; readonly amount: number }
 
 const TOKEN_KEY = "openspaces.token"
 
@@ -93,13 +108,15 @@ export const api = {
   testComputer: (name: string) => call<ComputerTest>("POST", `/computers/${enc(name)}/test`),
   threads: () => call<Thread[]>("GET", "/threads"),
   thread: (id: string, after = 0) => call<{ thread: Thread; events: ThreadEvent[]; total?: number }>("GET", `/threads/${enc(id)}?after=${after}`),
-  start: (body: { agent: AgentName; on: string; prompt: string; cwd?: string; model?: string; autoApprove?: boolean; keep?: boolean }) =>
+  start: (body: { agent: AgentName; on: string; prompt: string; cwd?: string; model?: string; autoApprove?: boolean; allowTools?: string[]; keep?: boolean }) =>
     call<Thread>("POST", "/threads", body),
   send: (id: string, prompt: string) => call<Thread>("POST", `/threads/${enc(id)}/send`, { prompt }),
   interrupt: (id: string) => call<{ ok: true }>("POST", `/threads/${enc(id)}/interrupt`),
   close: (id: string) => call<Thread>("POST", `/threads/${enc(id)}/close`),
   fanout: (body: { computers: string[]; agent: AgentName; prompt: string; autoApprove?: boolean }) =>
     call<{ threads: Array<{ on: string; id?: string; error?: string }> }>("POST", "/fanout", body),
+  screen: (on: string, after: number) => call<ScreenFrame>("GET", `/screen?on=${enc(on)}&after=${after}`),
+  input: (on: string, input: ScreenInput) => call<{ ok: true }>("POST", "/screen/input", { on, ...input }),
   view: (on: string) => call<ViewResult>("POST", "/view", { on }),
   sandboxes: () => call<{ runtime: Sandbox["runtime"] | null; sandboxes: Sandbox[] }>("GET", "/sandboxes"),
   createSandbox: (name: string, agents: AgentName[]) => call<{ sandboxes: Sandbox[] }>("POST", "/sandboxes", { name, agents }),

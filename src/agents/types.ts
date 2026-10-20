@@ -6,6 +6,7 @@ export interface TurnInput {
   readonly sessionId?: string
   /** Skip the agent's permission prompts (only sensible on an isolated computer). */
   readonly autoApprove: boolean
+  readonly allowTools?: readonly string[]
   readonly model?: string
 }
 

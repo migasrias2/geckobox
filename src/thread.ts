@@ -15,6 +15,7 @@ export const startOptionsSchema = z.object({
   cwd: z.string().startsWith("/", "cwd must be an absolute path").optional(),
   deleteOnClose: z.boolean().default(true),
   autoApprove: z.boolean().optional(),
+  allowTools: z.array(z.string().regex(/^[A-Za-z0-9_*.:()-]{1,80}$/, "invalid tool pattern")).max(20).optional(),
   model: z.string().min(1).optional(),
   forwardEnv: z.array(z.string().refine(isEnvName, "invalid env var name")).default([]),
 })
@@ -45,6 +46,7 @@ export async function createThread(options: StartOptions): Promise<ThreadState> 
     ...(parsed.cwd ? { cwd: parsed.cwd } : {}),
     deleteOnClose: parsed.deleteOnClose,
     autoApprove: parsed.autoApprove ?? isolated,
+    ...(parsed.allowTools?.length ? { allowTools: parsed.allowTools } : {}),
     ...(parsed.model ? { model: parsed.model } : {}),
     forwardEnv: [...new Set([...(computer.forwardEnv ?? []), ...parsed.forwardEnv])],
     status: "starting",

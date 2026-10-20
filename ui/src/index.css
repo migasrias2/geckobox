@@ -1,22 +1,24 @@
 @import "tailwindcss";
+@import "@fontsource-variable/nunito";
 
 @theme {
-  --color-bg: #070908;
-  --color-panel: #0c100e;
-  --color-raised: #121815;
-  --color-hover: #18201c;
-  --color-line: #1d2621;
-  --color-line-strong: #2a3630;
-  --color-ink: #e7f0ea;
-  --color-dim: #9aaba1;
-  --color-mute: #66766d;
-  --color-accent: #34d399;
-  --color-accent-strong: #10b981;
-  --color-accent-ink: #04140d;
-  --color-danger: #f87171;
-  --color-warn: #fbbf24;
-  --font-sans: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --color-bg: #050605;
+  --color-panel: #0e100f;
+  --color-raised: #161917;
+  --color-hover: #1d211f;
+  --color-line: rgba(255, 255, 255, 0.06);
+  --color-line-strong: rgba(255, 255, 255, 0.11);
+  --color-ink: #f1f5f2;
+  --color-dim: #a3ada7;
+  --color-mute: #6b746f;
+  --color-accent: #3ee39b;
+  --color-accent-strong: #22c97f;
+  --color-accent-ink: #03150c;
+  --color-danger: #ff7a7a;
+  --color-warn: #ffc65c;
+  --font-sans: ui-rounded, "SF Pro Rounded", "Nunito Variable", "Nunito", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --radius-panel: 28px;
 }
 
 html, body, #root { height: 100%; }
@@ -25,15 +27,28 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: 0.005em;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "cv11", "ss01";
 }
 ::selection { background: color-mix(in oklab, var(--color-accent) 35%, transparent); }
-* { scrollbar-width: thin; scrollbar-color: var(--color-line-strong) transparent; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.12) transparent; }
+
+/* Floating panels on the black canvas, Grok-style. */
+.panel {
+  background: var(--color-panel);
+  border-radius: var(--radius-panel);
+  box-shadow: inset 0 0 0 1px var(--color-line), 0 20px 60px -30px rgba(0,0,0,.9);
+}
+.glass {
+  background: color-mix(in oklab, var(--color-panel) 70%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
 
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 55%, transparent); }
-  100% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 8px transparent; }
 }
 .pulse-ring { animation: pulse-ring 1.6s ease-out infinite; }
 
@@ -44,16 +59,25 @@ body {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
-@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.rise { animation: rise 220ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px) scale(.99); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 260ms cubic-bezier(.2,.8,.2,1) both; }
 
-.glow { box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 30%, transparent), 0 8px 40px -12px color-mix(in oklab, var(--color-accent) 45%, transparent); }
+.glow { box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 35%, transparent), 0 10px 50px -12px color-mix(in oklab, var(--color-accent) 55%, transparent); }
+
+/* Bot faces: eyes blink when idle, glance while working, smile when done. */
+@keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes glance { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-1.6px); } 70% { transform: translateX(1.6px); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+.face-idle .eye { animation: blink 4.2s infinite; transform-origin: center; transform-box: fill-box; }
+.face-busy .eyes { animation: glance 1.4s ease-in-out infinite; }
+.face-busy { animation: bob 1.1s ease-in-out infinite; }
+
+/* Remote cursor and the agent's click ripples on the live screen. */
+@keyframes ripple { from { transform: translate(-50%, -50%) scale(.3); opacity: .9; } to { transform: translate(-50%, -50%) scale(2.4); opacity: 0; } }
+.ripple { animation: ripple 900ms ease-out forwards; }
+.cursor-glide { transition: left 280ms cubic-bezier(.2,.8,.2,1), top 280ms cubic-bezier(.2,.8,.2,1); }
+
 .grid-bg {
   background-image:
-    radial-gradient(ellipse 60% 50% at 50% 0%, color-mix(in oklab, var(--color-accent) 10%, transparent), transparent 70%),
-    linear-gradient(var(--color-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
-  background-size: 100% 100%, 44px 44px, 44px 44px;
-  background-position: 0 0, -1px -1px, -1px -1px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 20%, #000 40%, transparent 100%);
+    radial-gradient(ellipse 60% 55% at 50% 0%, color-mix(in oklab, var(--color-accent) 11%, transparent), transparent 70%);
 }

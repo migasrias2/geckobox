@@ -1,7 +1,8 @@
 import { Globe2, MonitorSmartphone, Plus, Server } from "lucide-react"
 import type { Computer, Thread } from "../lib/api"
 import { ago, AGENT_LABEL, isBusy, title } from "../lib/format"
-import { AgentAvatar, cx, SectionLabel, Skeleton, StatusDot } from "./ui"
+import { moodOf } from "./BotFace"
+import { AgentAvatar, cx, SectionLabel, Skeleton } from "./ui"
 
 export type View =
   | { readonly kind: "new" }
@@ -16,7 +17,7 @@ export function Logo() {
         <MonitorSmartphone className="size-4 text-accent" strokeWidth={2.2} />
       </span>
       <div className="leading-tight">
-        <div className="text-[15px] font-semibold tracking-tight">openspaces</div>
+        <div className="text-[17px] font-extrabold tracking-tight">openspaces</div>
         <div className="text-[11px] text-mute">free · open source · no relay</div>
       </div>
     </div>
@@ -28,7 +29,7 @@ function NavItem({ active, onClick, icon, label, badge }: { active: boolean; onC
     <button
       onClick={onClick}
       className={cx(
-        "flex h-9 w-full items-center gap-2.5 rounded-xl px-3 text-[13.5px] transition",
+        "flex h-10 w-full items-center gap-2.5 rounded-full px-4 text-[14px] font-semibold transition",
         active ? "bg-hover text-ink" : "text-dim hover:bg-hover/60 hover:text-ink",
       )}
     >
@@ -44,19 +45,18 @@ function ThreadItem({ thread, active, onClick }: { thread: Thread; active: boole
     <button
       onClick={onClick}
       className={cx(
-        "group flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition",
+        "group flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left transition",
         active ? "bg-hover" : "hover:bg-hover/60",
         thread.status === "closed" && !active && "opacity-55",
       )}
     >
-      <AgentAvatar agent={thread.agent} size={30} busy={isBusy(thread.status)} />
+      <AgentAvatar agent={thread.agent} size={34} mood={moodOf(thread.status, thread.turns.length > 0)} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] text-ink">{title(thread)}</span>
         <span className="block truncate text-[11.5px] text-mute">
           {AGENT_LABEL[thread.agent]} · {thread.on} · {ago(thread.updatedAt)}
         </span>
       </span>
-      <StatusDot status={thread.status} />
     </button>
   )
 }
@@ -76,7 +76,7 @@ export function Sidebar({
   const open = threads?.filter((t) => t.status !== "closed") ?? []
   const closed = threads?.filter((t) => t.status === "closed") ?? []
   return (
-    <aside className="flex h-full w-[284px] shrink-0 flex-col border-r border-line bg-panel">
+    <aside className="panel flex h-full w-[276px] shrink-0 flex-col overflow-hidden">
       <div className="px-4 pb-3 pt-5">
         <Logo />
       </div>
@@ -84,14 +84,12 @@ export function Sidebar({
         <button
           onClick={() => onView({ kind: "new" })}
           className={cx(
-            "flex h-10 w-full items-center gap-2 rounded-xl border px-3 text-[13.5px] font-medium transition",
-            view.kind === "new"
-              ? "border-accent/40 bg-accent/10 text-accent"
-              : "border-line bg-raised text-ink hover:border-accent/30 hover:text-accent",
+            "flex h-11 w-full items-center gap-2 rounded-full px-4 text-[14px] font-bold transition active:scale-[.98]",
+            view.kind === "new" ? "bg-accent text-accent-ink" : "bg-raised text-ink hover:bg-hover",
           )}
         >
           <Plus className="size-4" /> New thread
-          <span className="ml-auto font-mono text-[11px] text-mute">N</span>
+          <span className="ml-auto grid size-5 place-items-center rounded-md bg-black/15 font-mono text-[10.5px] opacity-70">N</span>
         </button>
         <div className="mt-2 space-y-0.5">
           <NavItem active={view.kind === "everywhere"} onClick={() => onView({ kind: "everywhere" })} icon={<Globe2 className="size-4" />} label="Run everywhere" />
@@ -106,7 +104,7 @@ export function Sidebar({
       </div>
 
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto px-2 pb-4">
-        <SectionLabel>Threads{busy ? ` · ${busy} working` : ""}</SectionLabel>
+        <SectionLabel>Bots{busy ? ` · ${busy} working` : ""}</SectionLabel>
         {threads === undefined ? (
           <div className="space-y-2 px-1">
             {[0, 1, 2].map((i) => (

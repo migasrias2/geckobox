@@ -3,6 +3,8 @@ import { z, ZodError } from "zod"
 import { AGENT_NAMES, AGENTS } from "../agents/index.js"
 import { addComputer, describe, loadRegistry, removeComputer, resolveComputer } from "../computers.js"
 import { probeComputer } from "../probe.js"
+import { inputSchema, sendInputOn } from "../screen.js"
+import type { ScreenHub } from "../screenHub.js"
 import { createSandbox, detectRuntime, listSandboxes, removeSandbox, setSandboxRunning } from "../sandbox.js"
 import { eventsFile, listThreads } from "../store.js"
 import { closeThread, createThread, interruptThread, queueTurn, threadStatus } from "../thread.js"
@@ -18,6 +20,7 @@ export interface RouteContext {
   readonly query: URLSearchParams
   readonly body: unknown
   readonly views: ViewManager
+  readonly screens: ScreenHub
 }
 
 export interface Route {
@@ -38,6 +41,7 @@ const startBody = z.object({
   cwd: z.string().optional(),
   model: z.string().optional(),
   autoApprove: z.boolean().optional(),
+  allowTools: z.array(z.string()).optional(),
   keep: z.boolean().optional(),
 })
 const sendBody = z.object({ prompt: text })
@@ -48,8 +52,10 @@ const fanoutBody = z.object({
   cwd: z.string().optional(),
   model: z.string().optional(),
   autoApprove: z.boolean().optional(),
+  allowTools: z.array(z.string()).optional(),
 })
 const viewBody = z.object({ on: text })
+const screenInputBody = z.object({ on: text })
 const sandboxBody = z.object({ name: text, agents: z.array(agentName).optional(), image: z.string().optional() })
 
 type StartInput = Omit<z.infer<typeof startBody>, "keep"> & { readonly keep?: boolean }
@@ -67,7 +73,7 @@ export function toHttpError(error: unknown): HttpError {
   if (error instanceof HttpError) return error
   if (error instanceof ZodError) return new HttpError(400, error.issues[0]?.message ?? "invalid input")
   const message = error instanceof Error ? error.message : String(error)
-  if (/^No (thread|computer|sandbox)|^Invalid thread id/.test(message)) return new HttpError(404, message)
+  if (/^No (thread|computer|sandbox|screen)|^Invalid thread id/.test(message)) return new HttpError(404, message)
   if (/still working|is closed|already exists/.test(message)) return new HttpError(409, message)
   if (/^No container runtime|is not installed/.test(message)) return new HttpError(412, message)
   if (/^(Invalid|Unknown|"local")|is empty/.test(message)) return new HttpError(400, message)
@@ -118,6 +124,7 @@ async function startOne(input: StartInput & { readonly on: string }): Promise<Th
     ...(input.cwd ? { cwd: input.cwd } : {}),
     ...(input.model ? { model: input.model } : {}),
     ...(input.autoApprove !== undefined ? { autoApprove: input.autoApprove } : {}),
+    ...(input.allowTools?.length ? { allowTools: input.allowTools } : {}),
   })
   spawnWorker(state.id)
   return state
@@ -135,6 +142,18 @@ async function fanout(body: z.infer<typeof fanoutBody>) {
     }),
   )
   return { threads }
+}
+
+async function screenFrame(screens: ScreenHub, query: URLSearchParams) {
+  const on = query.get("on")
+  if (!on) throw new HttpError(400, "on is required")
+  const afterRaw = query.get("after")
+  const after = afterRaw === null ? 0 : Number(afterRaw)
+  if (!Number.isInteger(after) || after < 0) throw new HttpError(400, "after must be a non-negative integer")
+  const { seq, at, frame, error } = await screens.next(on, after)
+  if (frame) return { seq, at, width: frame.width, height: frame.height, cursor: frame.cursor, image: frame.jpegBase64 }
+  if (error && /^No (screen|computer)/.test(error)) throw new Error(error)
+  return { seq, ...(error ? { error } : {}) }
 }
 
 async function testComputer(rawName: string) {
@@ -182,6 +201,12 @@ export const ROUTES: readonly Route[] = [
   post(`/api/threads/${ID}/close`, async ({ params }) => closeThread(params[0]!)),
   post("/api/fanout", async ({ body }) => fanout(parse(fanoutBody, body))),
   post("/api/view", async ({ body, views }) => views.open(parse(viewBody, body).on)),
+  get("/api/screen", async ({ screens, query }) => screenFrame(screens, query)),
+  post("/api/screen/input", async ({ body }) => {
+    const { on } = parse(screenInputBody, body)
+    await sendInputOn(on, parse(inputSchema, body))
+    return { ok: true }
+  }),
   get("/api/sandboxes", async () => ({
     runtime: await detectRuntime().catch(() => null),
     sandboxes: await listSandboxes(),

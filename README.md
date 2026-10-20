@@ -20,12 +20,14 @@ npm install -g github:migasrias2/openspaces
 openspaces ui
 ```
 
-A local dashboard opens in your browser, dark and green:
+A local dashboard opens in your browser: dark, green, rounded and calm, inspired by Grok Bot's layout (bots on the left, the conversation in the middle, the bot's computer live on the right).
 
 - **New thread:** pick an agent and a computer, say what to do, and it runs in the background.
-- **Threads:** a chat with each agent, showing its tool calls, cost and status live. Send the next message, interrupt it or close it.
+- **Threads:** a chat with each agent beside a **live view of its computer**. You see the screen, the agent's cursor gliding and a ripple wherever it clicks, at about 3 fps, all inside the app. **Take over** goes full screen and sends your clicks, scrolls and typing to that computer. Pause hands control back and forth.
+- **Bots with faces:** each agent has an animated face that blinks when idle, glances around while working and smiles when done.
 - **Run everywhere:** one job on several computers at once, with results side by side.
-- **Computers:** add SSH, Docker or Cua machines, check which agents each has, and open its live desktop.
+- **Computers:** create sandboxes, add SSH, Docker or Cua machines, check which agents each has, and watch any desktop live.
+- **"Let it use computers (Cua)"** pre-approves only Cua's tools on your Mac (Claude Code `--allowedTools mcp__cua`), so an agent can drive a sandbox's browser without approving everything.
 
 It runs on `127.0.0.1` only, behind a random token in the link the command prints, and it rejects other hosts, so other websites can't drive it.
 
@@ -131,7 +133,7 @@ await openThread("claudecode-94419f2a").send("Carry on")
 ```sh
 openspaces view mini            # SSH tunnel to the Mac's Screen Sharing (VNC :5900), opens it; Ctrl-C closes
 openspaces view mini --port 5901
-openspaces view cua:desk        # Cua's own local viewer (loopback, no relay)
+openspaces view cua:desk        # Cua's own local viewer (loopback, no relay); the app streams it inline
 ```
 
 On a Mac, turn on System Settings → General → Sharing → Screen Sharing. On Linux, run any VNC server bound to localhost. The tunnel goes over the same SSH you already use, so nothing new is exposed.

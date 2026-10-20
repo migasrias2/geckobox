@@ -41,9 +41,9 @@ export function App() {
 
   const changed = () => void threads.refresh()
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full gap-2.5 overflow-hidden p-2.5">
       <Sidebar view={view} onView={setView} threads={threads.data} computers={computers.data} />
-      <main className="flex min-w-0 flex-1">
+      <main className="flex min-w-0 flex-1 gap-2.5">
         {view.kind === "new" && (
           <NewThread
             agents={agents.data}

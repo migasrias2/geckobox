@@ -46,7 +46,7 @@ export function Sandboxes({ onChanged }: { onChanged: () => void }) {
         </p>
 
         {data && !data.runtime ? (
-          <p className="mt-4 rounded-xl border border-warn/25 bg-warn/10 px-3 py-2 text-[13px] text-warn">
+          <p className="mt-4 rounded-2xl border border-warn/25 bg-warn/10 px-3 py-2 text-[13px] text-warn">
             No container runtime found. Run <code className="font-mono">brew install container && container system start</code>, then reload.
           </p>
         ) : (
@@ -57,7 +57,7 @@ export function Sandboxes({ onChanged }: { onChanged: () => void }) {
                 onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
                 placeholder="Name, e.g. dev"
                 disabled={creating}
-                className="h-10 w-48 rounded-xl border border-line bg-raised px-3 text-[13.5px] outline-none placeholder:text-mute focus:border-accent/50"
+                className="h-10 w-48 rounded-2xl border border-line bg-raised px-3 text-[13.5px] outline-none placeholder:text-mute focus:border-accent/50"
               />
               <div className="flex flex-1 flex-wrap items-center gap-1.5">
                 {INSTALLABLE.map((a) => (

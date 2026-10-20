@@ -80,6 +80,7 @@ export function runTurn(state: ThreadState, adapter: AgentAdapter, prompt: strin
   const argv = adapter.argv({
     prompt,
     autoApprove: state.autoApprove,
+    ...(state.allowTools?.length ? { allowTools: state.allowTools } : {}),
     ...(state.sessionId ? { sessionId: state.sessionId } : {}),
     ...(state.model ? { model: state.model } : {}),
   })

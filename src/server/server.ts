@@ -5,6 +5,7 @@ import { hasAllowedHost, hasValidToken, newToken } from "./auth.js"
 import { HttpError, readJsonBody, sendError, sendJson } from "./http.js"
 import { matchRoute, toHttpError } from "./routes.js"
 import { serveStatic } from "./static.js"
+import { ScreenHub } from "../screenHub.js"
 import { ViewManager } from "./views.js"
 
 export interface ServerOptions {
@@ -12,6 +13,8 @@ export interface ServerOptions {
   readonly host?: string
   readonly staticDir?: string
   readonly token?: string
+  /** Inject a hub (tests); defaults to one capturing real screens. */
+  readonly screens?: ScreenHub
 }
 
 export interface RunningServer {
@@ -28,11 +31,11 @@ function defaultStaticDir(): string {
   return fileURLToPath(new URL("../ui/", import.meta.url))
 }
 
-async function handleApi(req: IncomingMessage, res: ServerResponse, path: string, query: URLSearchParams, views: ViewManager): Promise<void> {
+async function handleApi(req: IncomingMessage, res: ServerResponse, path: string, query: URLSearchParams, views: ViewManager, screens: ScreenHub): Promise<void> {
   const match = matchRoute(req.method ?? "GET", path)
   if (!match) throw new HttpError(404, "not found")
   const body = match.route.needsBody ? await readJsonBody(req) : undefined
-  sendJson(res, 200, await match.route.run({ params: match.params, query, body, views }))
+  sendJson(res, 200, await match.route.run({ params: match.params, query, body, views, screens }))
 }
 
 export async function startServer(options: ServerOptions = {}): Promise<RunningServer> {
@@ -41,6 +44,7 @@ export async function startServer(options: ServerOptions = {}): Promise<RunningS
   const token = options.token ?? newToken()
   const staticDir = options.staticDir ?? defaultStaticDir()
   const views = new ViewManager()
+  const screens = options.screens ?? new ScreenHub()
   let port = 0
 
   const server = createServer((req, res) => {
@@ -56,7 +60,7 @@ export async function startServer(options: ServerOptions = {}): Promise<RunningS
     const [path = "/", search = ""] = (req.url ?? "/").split("?", 2)
     if (path === "/api" || path.startsWith("/api/")) {
       if (!hasValidToken(req, token)) throw new HttpError(401, "missing or wrong x-openspaces-token")
-      return handleApi(req, res, path, new URLSearchParams(search), views)
+      return handleApi(req, res, path, new URLSearchParams(search), views, screens)
     }
     if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "method not allowed")
     return serveStatic(res, staticDir, path, req.method === "HEAD")
@@ -77,6 +81,7 @@ export async function startServer(options: ServerOptions = {}): Promise<RunningS
     close: () =>
       new Promise<void>((resolve) => {
         views.closeAll()
+        screens.close()
         server.close(() => resolve())
         server.closeAllConnections()
       }),

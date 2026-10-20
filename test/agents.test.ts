@@ -113,3 +113,12 @@ describe("cua tool targets", () => {
     expect(cuaTarget("mcp__cua__space_bash", { space: "x; rm -rf /" })).toBeUndefined()
   })
 })
+
+describe("allowTools", () => {
+  it("pre-approves named tools only when not auto-approving", () => {
+    const a = getAgent("claude-code")
+    expect(a.argv({ prompt: "p", autoApprove: false, allowTools: ["mcp__cua"] })).toContain("--allowedTools")
+    expect(a.argv({ prompt: "p", autoApprove: false, allowTools: ["mcp__cua", "Bash(git:*)"] })).toContain("mcp__cua,Bash(git:*)")
+    expect(a.argv({ prompt: "p", autoApprove: true, allowTools: ["mcp__cua"] })).not.toContain("--allowedTools")
+  })
+})

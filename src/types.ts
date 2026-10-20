@@ -40,6 +40,8 @@ export interface ThreadState {
   readonly cwd?: string
   readonly deleteOnClose: boolean
   readonly autoApprove: boolean
+  /** Tools pre-approved even without autoApprove, e.g. "mcp__cua" (Claude Code --allowedTools). */
+  readonly allowTools?: readonly string[]
   readonly model?: string
   readonly forwardEnv: readonly string[]
   /** The agent's own session id, used to resume on the next turn. */
@@ -56,8 +58,11 @@ export interface ThreadState {
 export type AgentEvent =
   | { readonly type: "session"; readonly sessionId: string }
   | { readonly type: "text"; readonly text: string }
-  /** `target`: the computer a tool acted on, when the tool names one (e.g. a Cua Space). */
-  | { readonly type: "tool"; readonly name: string; readonly target?: string }
+  /**
+   * `target`: the computer a tool acted on, when the tool names one (e.g. a Cua Space).
+   * `point`: screen coordinates the tool acted on (non-negative integers), when it has x and y.
+   */
+  | { readonly type: "tool"; readonly name: string; readonly target?: string; readonly point?: { readonly x: number; readonly y: number } }
   | { readonly type: "result"; readonly ok: boolean; readonly text: string; readonly costUsd?: number }
   | { readonly type: "stderr"; readonly text: string }
 

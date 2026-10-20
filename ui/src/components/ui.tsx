@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react"
 import { ChevronDown } from "lucide-react"
 import type { AgentName, ThreadStatus } from "../lib/api"
+import { BotFace, type Mood } from "./BotFace"
 import { isBusy, STATUS_LABEL } from "../lib/format"
 
 export function cx(...parts: Array<string | false | undefined | null>): string {
@@ -11,9 +12,9 @@ type Variant = "primary" | "subtle" | "ghost" | "danger"
 
 const VARIANT: Record<Variant, string> = {
   primary: "bg-accent text-accent-ink hover:bg-[#4ade9f] font-semibold shadow-[0_0_24px_-6px_var(--color-accent)]",
-  subtle: "bg-raised text-ink border border-line hover:border-line-strong hover:bg-hover",
+  subtle: "bg-raised text-ink hover:bg-hover",
   ghost: "text-dim hover:text-ink hover:bg-hover",
-  danger: "bg-raised text-danger border border-line hover:border-danger/40 hover:bg-danger/10",
+  danger: "bg-raised text-danger hover:bg-danger/10",
 }
 
 export function Button({
@@ -27,9 +28,9 @@ export function Button({
     <button
       {...rest}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-xl transition-all duration-150 select-none",
+        "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-150 select-none active:scale-[.97]",
         "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-accent/60",
-        size === "sm" ? "h-8 px-3 text-[13px]" : "h-10 px-4 text-sm",
+        size === "sm" ? "h-8 px-3.5 text-[13px]" : "h-10 px-5 text-sm",
         VARIANT[variant],
         className,
       )}
@@ -46,8 +47,8 @@ export function IconButton({ label, children, className, ...rest }: ButtonHTMLAt
       title={label}
       aria-label={label}
       className={cx(
-        "grid size-10 place-items-center rounded-full border border-line bg-raised text-dim transition",
-        "hover:border-accent/40 hover:text-accent disabled:opacity-35 disabled:pointer-events-none",
+        "grid size-10 place-items-center rounded-full bg-raised text-dim transition active:scale-95",
+        "hover:bg-hover hover:text-accent disabled:opacity-35 disabled:pointer-events-none",
         className,
       )}
     >
@@ -77,31 +78,12 @@ export function StatusPill({ status }: { status: ThreadStatus }) {
   )
 }
 
-const GLYPH: Record<AgentName, string> = {
-  "claude-code": "✳",
-  codex: "◎",
-  gemini: "✦",
-  opencode: "{}",
-  shell: ">_",
-}
-
-export function AgentAvatar({ agent, size = 36, busy = false }: { agent: AgentName; size?: number; busy?: boolean }) {
-  return (
-    <span
-      className={cx(
-        "relative grid shrink-0 place-items-center rounded-[30%] font-mono font-bold text-accent",
-        "bg-[radial-gradient(circle_at_30%_25%,#1f4d39,#0d1f17_70%)] border border-accent/25",
-        busy && "glow",
-      )}
-      style={{ width: size, height: size, fontSize: size * (GLYPH[agent].length > 1 ? 0.34 : 0.48) }}
-    >
-      {GLYPH[agent]}
-    </span>
-  )
+export function AgentAvatar({ agent, size = 36, busy = false, mood }: { agent: AgentName; size?: number; busy?: boolean; mood?: Mood }) {
+  return <BotFace agent={agent} size={size} mood={mood ?? (busy ? "busy" : "idle")} />
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("rounded-2xl border border-line bg-panel", className)}>{children}</div>
+  return <div className={cx("rounded-[22px] bg-raised/60 shadow-[inset_0_0_0_1px_var(--color-line)]", className)}>{children}</div>
 }
 
 export function Row({ label, children, mono = false }: { label: string; children: ReactNode; mono?: boolean }) {
@@ -118,7 +100,7 @@ export function Select({ className, children, ...rest }: SelectHTMLAttributes<HT
     <span className={cx("relative inline-flex", className)}>
       <select
         {...rest}
-        className="h-9 w-full appearance-none rounded-full border border-line bg-raised pl-3.5 pr-8 text-[13px] text-ink outline-none transition hover:border-line-strong focus:border-accent/50"
+        className="h-9 w-full appearance-none rounded-full bg-hover pl-4 pr-8 text-[13px] font-semibold text-ink outline-none transition hover:bg-[#252a27] focus:ring-2 focus:ring-accent/40"
       >
         {children}
       </select>
@@ -145,9 +127,9 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
 }
 
 export function SectionLabel({ children }: { children: ReactNode }) {
-  return <div className="px-3 pb-1.5 pt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">{children}</div>
+  return <div className="px-3 pb-1.5 pt-5 text-[12px] font-bold text-mute">{children}</div>
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cx("skeleton rounded-xl", className)} />
+  return <div className={cx("skeleton rounded-2xl", className)} />
 }

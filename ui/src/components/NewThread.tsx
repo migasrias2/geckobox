@@ -23,11 +23,12 @@ export function NewThread({
   const [agent, setAgent] = useState<AgentName>("claude-code")
   const [on, setOn] = useState("local")
   const [autoApprove, setAutoApprove] = useState(false)
+  const [computerTools, setComputerTools] = useState(true)
   const [cwd, setCwd] = useState("")
   const [idea, setIdea] = useState("")
 
   return (
-    <div className="relative flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
+    <div className="panel relative flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
       <div className="grid-bg pointer-events-none absolute inset-x-0 top-0 h-[420px]" />
       <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-16">
         <div className="mb-2 inline-flex w-fit items-center gap-2 rounded-full border border-accent/25 bg-accent/10 px-3 py-1 text-[12px] font-medium text-accent">
@@ -47,7 +48,14 @@ export function NewThread({
             initial={idea}
             placeholder="What should it do?"
             onSubmit={async (prompt) => {
-              const thread = await api.start({ agent, on, prompt, autoApprove, ...(cwd.trim() ? { cwd: cwd.trim() } : {}) })
+              const thread = await api.start({
+                agent,
+                on,
+                prompt,
+                autoApprove,
+                ...(computerTools ? { allowTools: ["mcp__cua"] } : {}),
+                ...(cwd.trim() ? { cwd: cwd.trim() } : {}),
+              })
               onStarted(thread)
             }}
             footer={
@@ -73,7 +81,8 @@ export function NewThread({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3 px-1">
-          <Toggle checked={autoApprove} onChange={setAutoApprove} label="Auto-approve actions" />
+          <Toggle checked={computerTools} onChange={setComputerTools} label="Let it use computers (Cua)" />
+          <Toggle checked={autoApprove} onChange={setAutoApprove} label="Auto-approve everything" />
           <input
             value={cwd}
             onChange={(e) => setCwd(e.target.value)}
@@ -89,7 +98,7 @@ export function NewThread({
               <button
                 key={text}
                 onClick={() => setIdea(text)}
-                className="rounded-2xl border border-line bg-panel px-4 py-3 text-left text-[13px] leading-snug text-dim transition hover:border-accent/30 hover:text-ink"
+                className="rounded-[22px] border border-line bg-panel px-4 py-3 text-left text-[13px] leading-snug text-dim transition hover:border-accent/30 hover:text-ink"
               >
                 {text}
               </button>

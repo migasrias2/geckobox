@@ -1,6 +1,7 @@
 import { Monitor, Pause, Square, X } from "lucide-react"
 import type { Thread } from "../lib/api"
 import { ago, AGENT_LABEL, cost, isBusy, title } from "../lib/format"
+import { moodOf } from "./BotFace"
 import { AgentAvatar, Card, IconButton, Row, SectionLabel, StatusPill } from "./ui"
 
 const KIND_LABEL = { local: "This machine", ssh: "Over SSH", container: "Sandbox on this Mac", docker: "Docker container", podman: "Podman container", cua: "Cua sandbox" } as const
@@ -22,14 +23,14 @@ export function DetailsPanel({
   const closed = thread.status === "closed"
   const total = cost(thread)
   return (
-    <aside className="flex h-full w-[340px] shrink-0 flex-col overflow-y-auto border-l border-line bg-panel">
+    <aside className="panel flex h-full w-[360px] shrink-0 flex-col overflow-y-auto">
       <div className="flex justify-end px-3 pt-3">
         <button onClick={onHide} className="rounded-lg p-1.5 text-mute hover:bg-hover hover:text-ink" aria-label="Hide details">
           <X className="size-4" />
         </button>
       </div>
       <div className="flex flex-col items-center px-6 pb-5 text-center">
-        <AgentAvatar agent={thread.agent} size={72} busy={busy} />
+        <AgentAvatar agent={thread.agent} size={84} mood={moodOf(thread.status, thread.turns.length > 0)} />
         <div className="mt-4 line-clamp-2 text-[15px] font-semibold leading-snug">{title(thread)}</div>
         <div className="mt-1 font-mono text-[11.5px] text-mute">{thread.id}</div>
         <div className="mt-3">
@@ -52,7 +53,7 @@ export function DetailsPanel({
         <SectionLabel>Computer</SectionLabel>
         <Card>
           <button onClick={onDesktop} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-hover/50">
-            <span className="grid size-9 place-items-center rounded-xl border border-line bg-raised">
+            <span className="grid size-9 place-items-center rounded-2xl border border-line bg-raised">
               <Monitor className="size-4 text-accent" />
             </span>
             <span className="min-w-0 flex-1">

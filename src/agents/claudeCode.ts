@@ -11,12 +11,31 @@ export function cuaTarget(tool: string, input: unknown): string | undefined {
   return value
 }
 
+function coordinate(value: unknown): number | undefined {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined
+  const rounded = Math.round(value)
+  return rounded >= 0 ? rounded : undefined
+}
+
+/** x/y of a tool call, at the top level of its input or inside `arguments` (cua's call_tool). */
+export function toolPoint(input: unknown): { x: number; y: number } | undefined {
+  if (!input || typeof input !== "object") return undefined
+  const fields = input as Record<string, unknown>
+  for (const source of [fields, fields.arguments]) {
+    if (!source || typeof source !== "object") continue
+    const { x, y } = source as Record<string, unknown>
+    const point = { x: coordinate(x), y: coordinate(y) }
+    if (point.x !== undefined && point.y !== undefined) return { x: point.x, y: point.y }
+  }
+  return undefined
+}
+
 /** Claude Code in print mode with the stream-json output format. */
 export const claudeCode: AgentAdapter = {
   name: "claude-code",
   binary: "claude",
   tested: true,
-  argv({ prompt, sessionId, autoApprove, model }) {
+  argv({ prompt, sessionId, autoApprove, model, allowTools }) {
     return [
       "claude",
       "-p",
@@ -25,6 +44,7 @@ export const claudeCode: AgentAdapter = {
       "stream-json",
       "--verbose",
       ...(autoApprove ? ["--dangerously-skip-permissions"] : ["--permission-mode", "acceptEdits"]),
+      ...(!autoApprove && allowTools?.length ? ["--allowedTools", allowTools.join(",")] : []),
       ...(model ? ["--model", model] : []),
       ...(sessionId ? ["--resume", sessionId] : []),
     ]
@@ -45,7 +65,8 @@ export const claudeCode: AgentAdapter = {
         if (b.type === "text" && typeof b.text === "string") return [{ type: "text", text: b.text }]
         if (b.type === "tool_use" && typeof b.name === "string") {
           const target = cuaTarget(b.name, b.input)
-          return [{ type: "tool", name: b.name, ...(target ? { target } : {}) }]
+          const point = toolPoint(b.input)
+          return [{ type: "tool", name: b.name, ...(target ? { target } : {}), ...(point ? { point } : {}) }]
         }
         return []
       })

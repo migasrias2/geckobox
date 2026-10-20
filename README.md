@@ -2,20 +2,42 @@
 
 <sub>The command-line tool and SDK are called `openspaces`.</sub>
 
-**New here? Read the [tutorial with screenshots](docs/TUTORIAL.md).**
-
 Put Claude Code, Codex or any coding agent on a computer you choose, and run jobs across all your computers at once. **Free, with no limits.**
 
 The "bring your own computer" idea from [Cua Spaces](https://x.com/trycua/status/2112228154651881479), without the meter:
 
-- **Live sessions:** Cua Free 2, Pro 5. openspaces: unlimited.
-- **Remote hours a month:** Cua Free 20, Pro 200. openspaces: unlimited.
-- **Account:** Cua needs one for remote use. openspaces needs none.
-- **Licence:** Cua is FSL-1.1. openspaces is MIT.
+- **Live sessions:** Cua Free 2, Pro 5. Geckobox: unlimited.
+- **Remote hours a month:** Cua Free 20, Pro 200. Geckobox: unlimited.
+- **Account:** Cua needs one for remote use. Geckobox needs none.
+- **Licence:** Cua is FSL-1.1. Geckobox is MIT.
 
 Cua meters its relay. openspaces has no relay: it reaches your computers directly. They can be sandboxes it creates on your own machine, any box over SSH ([Tailscale](https://tailscale.com) handles NAT), Docker, or a Cua sandbox. With no middleman there is nothing to meter. It is an independent clean-room implementation, not affiliated with Cua; none of its code comes from Cua.
 
 ![openspaces dashboard: a Claude Code thread on this Mac](docs/thread.jpg)
+
+## Quick tour
+
+**1. Say what to do, pick the computer, agent and model.**
+
+![New thread](docs/tutorial/01-new-thread.jpg)
+
+**2. Add computers: sandboxes on your Mac in ~20 s, or any machine over SSH, Docker or Cua.**
+
+![Computers](docs/tutorial/02-computers.jpg)
+
+**3. Watch the agent work live, next to the chat.**
+
+![Thread with live screen](docs/tutorial/03-thread-live-screen.jpg)
+
+**4. Take over anytime: click, scroll and type into its computer, or record it.**
+
+![Take over](docs/tutorial/04-take-over.jpg)
+
+**5. Run one job on every computer at once.**
+
+![Run everywhere](docs/tutorial/05-run-everywhere.jpg)
+
+**➜ Full step-by-step guide: [docs/TUTORIAL.md](docs/TUTORIAL.md)**
 
 ## The app
 

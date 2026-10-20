@@ -167,9 +167,9 @@ export function LiveScreen({
   const ripple = (x: number, y: number) => setMine((p) => [...p.slice(-4), { key: `${Date.now()}`, x, y }])
 
   const onKey = (e: KeyboardEvent) => {
-    // Every key belongs to the remote computer while you have control: never to app shortcuts.
-    e.stopPropagation()
+    // Shift+Esc leaves take-over, so let it reach the viewer; every other key belongs to the remote computer.
     if (e.key === "Escape" && e.shiftKey) return
+    e.stopPropagation()
     const key = keyFor(e)
     e.preventDefault()
     if (key) {

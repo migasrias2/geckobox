@@ -23,6 +23,8 @@ The command prints a private link (`http://127.0.0.1:4600/#token=…`) and opens
 
 ![The new-thread screen](tutorial/01-new-thread.jpg)
 
+![Picking the computer, agent and model](tutorial/start-a-task.gif)
+
 ## 3. Give an agent something to do
 
 1. Type a task in the box, or click one of the ideas under it.
@@ -83,6 +85,8 @@ Every thread is a chat, with the agent's computer live beside it.
 
 ![A thread with the live screen](tutorial/03-thread-live-screen.jpg)
 
+![The agent working live](tutorial/agent-live.gif)
+
 - **Ran 5 tools · 21s** rows expand to show each tool call and what it touched.
 - The **gecko** shows the bot's state. It looks around when idle, sparkles and scurries while working, smiles when done, gets dizzy when stuck, and falls asleep when closed.
 - The **live screen** follows whichever computer the agent is actually using. The green-rimmed pointer is the agent's, and a ripple shows each click.
@@ -93,7 +97,7 @@ Every thread is a chat, with the agent's computer live beside it.
 
 Click the screen, or **Take over**, to open the full viewer.
 
-![Take-over mode](tutorial/04-take-over.jpg)
+![Take-over mode](tutorial/take-over.gif)
 
 Click, scroll and type straight into the computer. Taking over pauses a working agent, so you don't fight it for the mouse.
 

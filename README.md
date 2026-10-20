@@ -19,7 +19,7 @@ Cua meters its relay. openspaces has no relay: it reaches your computers directl
 
 **1. Say what to do, pick the computer, agent and model.**
 
-![New thread](docs/tutorial/01-new-thread.jpg)
+![Starting a task: pick the computer, agent and model](docs/tutorial/start-a-task.gif)
 
 **2. Add computers: sandboxes on your Mac in ~20 s, or any machine over SSH, Docker or Cua.**
 
@@ -27,11 +27,11 @@ Cua meters its relay. openspaces has no relay: it reaches your computers directl
 
 **3. Watch the agent work live, next to the chat.**
 
-![Thread with live screen](docs/tutorial/03-thread-live-screen.jpg)
+![An agent searching Wikipedia on its own computer, live](docs/tutorial/agent-live.gif)
 
 **4. Take over anytime: click, scroll and type into its computer, or record it.**
 
-![Take over](docs/tutorial/04-take-over.jpg)
+![Taking over and scrolling the agent's browser](docs/tutorial/take-over.gif)
 
 **5. Run one job on every computer at once.**
 

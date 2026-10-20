@@ -51,7 +51,7 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
     <div className="flex h-full min-w-0 flex-1 gap-2.5">
       <section className="panel flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         <header className="flex h-16 shrink-0 items-center gap-3 px-5">
-          <AgentAvatar agent={thread.agent} size={34} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
+          <AgentAvatar agent={thread.agent} seed={thread.id} size={34} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-bold">{title(thread)}</div>
             <div className="truncate text-[12px] text-mute">
@@ -79,6 +79,7 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
               <div key={turn.index} className="space-y-4">
                 <UserBubble text={turn.prompt} />
                 <AgentTurn
+                  seed={thread.id}
                   turn={turn}
                   events={byTurn[turn.index] ?? []}
                   agent={thread.agent}

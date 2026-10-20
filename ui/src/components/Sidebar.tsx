@@ -50,7 +50,7 @@ function ThreadItem({ thread, active, onClick }: { thread: Thread; active: boole
         thread.status === "closed" && !active && "opacity-55",
       )}
     >
-      <AgentAvatar agent={thread.agent} size={34} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
+      <AgentAvatar agent={thread.agent} seed={thread.id} size={34} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] text-ink">{title(thread)}</span>
         <span className="block truncate text-[11.5px] text-mute">

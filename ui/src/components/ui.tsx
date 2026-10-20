@@ -78,8 +78,8 @@ export function StatusPill({ status }: { status: ThreadStatus }) {
   )
 }
 
-export function AgentAvatar({ agent, size = 36, busy = false, mood }: { agent: AgentName; size?: number; busy?: boolean; mood?: Mood }) {
-  return <Gecko agent={agent} size={size} mood={mood ?? (busy ? "busy" : "idle")} />
+export function AgentAvatar({ agent, size = 36, busy = false, mood, seed }: { agent: AgentName; size?: number; busy?: boolean; mood?: Mood; seed?: string }) {
+  return <Gecko agent={agent} seed={seed} size={size} mood={mood ?? (busy ? "busy" : "idle")} />
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {

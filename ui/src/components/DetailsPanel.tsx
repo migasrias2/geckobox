@@ -30,7 +30,7 @@ export function DetailsPanel({
         </button>
       </div>
       <div className="flex flex-col items-center px-6 pb-5 text-center">
-        <AgentAvatar agent={thread.agent} size={84} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
+        <AgentAvatar agent={thread.agent} seed={thread.id} size={84} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
         <div className="mt-4 line-clamp-2 text-[15px] font-semibold leading-snug">{title(thread)}</div>
         <div className="mt-1 font-mono text-[11.5px] text-mute">{thread.id}</div>
         <div className="mt-3">

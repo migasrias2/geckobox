@@ -127,13 +127,13 @@ export function UserBubble({ text }: { text: string }) {
   )
 }
 
-export function AgentTurn({ turn, events, agent, liveTool }: { turn: TurnRecord; events: readonly ThreadEvent[]; agent: AgentName; liveTool?: string }) {
+export function AgentTurn({ turn, events, agent, liveTool, seed }: { turn: TurnRecord; events: readonly ThreadEvent[]; agent: AgentName; liveTool?: string; seed?: string }) {
   const blocks = toBlocks(events, agent)
   const running = !turn.endedAt
   const hasText = blocks.some((b) => b.kind === "text")
   return (
     <div className="rise flex gap-3">
-      <AgentAvatar agent={agent} size={30} busy={running} />
+      <AgentAvatar agent={agent} seed={seed} size={30} mood={running ? "busy" : turn.ok === false ? "stuck" : "done"} />
       <div className="min-w-0 flex-1 space-y-2.5 pt-0.5">
         {blocks.map((b, i) =>
           b.kind === "text" ? (

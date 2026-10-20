@@ -47,6 +47,35 @@ def holes(fg: np.ndarray) -> np.ndarray:
     return arr == 0
 
 
+def align(cells: list) -> list:
+    """Re-anchor every face so its body overlaps the first face's body as well as possible.
+    Bounding boxes alone drift (claws and tail differ by a few pixels), which moved the eyes."""
+    ref_solid, _, _, (rx0, ry0, _, _) = cells[0]
+    small = 4  # search on a 4x-downsampled grid, then refine at full scale
+    ref = ref_solid[ry0:, rx0:]
+
+    def score(solid: np.ndarray, x0: int, y0: int, step: int) -> int:
+        part = solid[y0:, x0:]
+        hh, ww = min(ref.shape[0], part.shape[0]), min(ref.shape[1], part.shape[1])
+        return int((ref[:hh:step, :ww:step] & part[:hh:step, :ww:step]).sum())
+
+    out = [cells[0]]
+    for solid, shade, eyes, (x0, y0, x1, y1) in cells[1:]:
+        best = (score(solid, x0, y0, small), x0, y0)
+        for dy in range(-30 * SCALE, 30 * SCALE + 1, small):
+            for dx in range(-30 * SCALE, 30 * SCALE + 1, small):
+                nx, ny = x0 + dx, y0 + dy
+                if nx < 0 or ny < 0:
+                    continue
+                v = score(solid, nx, ny, small)
+                if v > best[0]:
+                    best = (v, nx, ny)
+        _, bx, by = best
+        fine = max(((score(solid, bx + dx, by + dy, 1), bx + dx, by + dy) for dy in range(-small, small + 1) for dx in range(-small, small + 1)), key=lambda t: t[0])
+        out.append((solid, shade, eyes, (fine[1], fine[2], x1, y1)))
+    return out
+
+
 def main() -> None:
     sheet = Image.open(SHEET).convert("L")
     cell = sheet.width // 3
@@ -67,6 +96,7 @@ def main() -> None:
         solid = (fg | eyes) & ~shade
         cells.append((solid, shade, eyes, (xs.min(), ys.min(), xs.max(), ys.max())))
 
+    cells = align(cells)
     w = max(b[3][2] - b[3][0] for b in cells) + 2 * PAD * SCALE
     h = max(b[3][3] - b[3][1] for b in cells) + 2 * PAD * SCALE
     out: dict = {"width": int(w), "height": int(h), "moods": {}}

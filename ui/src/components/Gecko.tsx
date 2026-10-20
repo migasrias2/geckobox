@@ -53,7 +53,7 @@ const FACE: Record<Mood, GeckoMood> = {
   done: "happy",
   stuck: "dizzy",
   dead: "dead",
-  asleep: "sleepy",
+  asleep: "happy", // closed, contented eyes: the drawn "sleepy" face reads as a scowl
 }
 
 const STYLE = `
@@ -62,6 +62,8 @@ const STYLE = `
 @keyframes gk-hop { 0%,100% { transform: translateY(0) } 25% { transform: translateY(-14%) rotate(-6deg) } 45% { transform: translateY(0) } 60% { transform: translateY(-5%) } }
 @keyframes gk-shake { 0%,80%,100% { transform: translateX(0) } 84% { transform: translateX(-5%) rotate(-4deg) } 88% { transform: translateX(5%) rotate(4deg) } 92% { transform: translateX(-3%) } 96% { transform: translateX(3%) } }
 @keyframes gk-blink { 0%,93%,100% { transform: scaleY(1) } 96% { transform: scaleY(0.08) } }
+@keyframes gk-z { 0% { opacity: 0; transform: translate(0, 0) scale(.7) } 30% { opacity: .9 } 100% { opacity: 0; transform: translate(35%, -60%) scale(1.1) } }
+.gk-z { position: absolute; right: -6%; top: -4%; font-weight: 800; color: var(--color-dim); animation: gk-z 2.8s ease-out infinite; pointer-events: none; }
 @keyframes gk-pop { from { transform: scale(.6); opacity: 0 } to { transform: none; opacity: 1 } }
 .gk { transform-origin: 50% 55%; }
 .gk-idle, .gk-done, .gk-asleep { animation: gk-breathe 3.4s ease-in-out infinite; }
@@ -111,7 +113,7 @@ export function Gecko({
   const [focused, setFocused] = useState(false)
   const [hop, setHop] = useState(false)
 
-  // Working geckos alternate between sparkly eyes and a focused squint.
+  // Working geckos alternate between sparkly eyes and wide-open ones.
   useEffect(() => {
     if (mood !== "busy") return
     const t = setInterval(() => setFocused((f) => !f), 2600)
@@ -126,7 +128,7 @@ export function Gecko({
   }, [mood])
 
   const tint = seed ? colorFor(seed) : TINT[agent]
-  const face: GeckoMood = hover && hoverLove && mood !== "dead" ? "love" : mood === "busy" && focused ? "grumpy" : FACE[mood]
+  const face: GeckoMood = hover && hoverLove && mood !== "dead" ? "love" : mood === "busy" && focused ? "look" : FACE[mood]
   const motion = hop ? "gk-hop" : `gk-${mood}`
   const { width: W, height: H } = GECKO
   return (
@@ -151,6 +153,11 @@ export function Gecko({
           </g>
         </g>
       </svg>
+      {mood === "asleep" && size >= 24 && (
+        <span className="gk-z" style={{ fontSize: Math.max(9, size * 0.3) }} aria-hidden>
+          z
+        </span>
+      )}
     </span>
   )
 }

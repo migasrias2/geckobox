@@ -65,7 +65,7 @@ export function openUrl(url: string): void {
   spawn(opener, [url], { stdio: "ignore", detached: true }).unref()
 }
 
-async function waitForPort(port: number, timeoutMs: number): Promise<void> {
+export async function waitForPort(port: number, timeoutMs: number): Promise<void> {
   const { connect } = await import("node:net")
   const deadline = Date.now() + timeoutMs
   for (;;) {

@@ -7,19 +7,41 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
-  "bin": { "openspaces": "dist/cli.js" },
-  "files": ["dist", "README.md", "LICENSE"],
-  "engines": { "node": ">=20" },
+  "bin": {
+    "openspaces": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -p tsconfig.build.json && npm run build:ui",
     "prepare": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:ui": "npm --prefix ui ci --no-audit --no-fund && npm --prefix ui run build",
+    "dev:ui": "npm --prefix ui run dev"
   },
-  "keywords": ["agents", "claude-code", "codex", "gemini-cli", "ssh", "docker", "sandbox", "computer"],
+  "keywords": [
+    "agents",
+    "claude-code",
+    "codex",
+    "gemini-cli",
+    "ssh",
+    "docker",
+    "sandbox",
+    "computer"
+  ],
   "dependencies": {
     "zod": "^4.1.0"
   },

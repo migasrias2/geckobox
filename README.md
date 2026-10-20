@@ -11,6 +11,28 @@ The "bring your own computer" idea from [Cua Spaces](https://x.com/trycua/status
 
 Cua meters its relay. openspaces has no relay: it reaches your computers directly over SSH (works great with [Tailscale](https://tailscale.com) for machines behind NAT), Docker, or a local Cua sandbox, so there is nothing to meter. It is an independent clean-room implementation, not affiliated with Cua; none of its code comes from Cua.
 
+![openspaces dashboard: a Claude Code thread on this Mac](docs/thread.jpg)
+
+## The app
+
+```sh
+npm install -g github:migasrias2/openspaces
+openspaces ui
+```
+
+A local dashboard opens in your browser, dark and green:
+
+- **New thread:** pick an agent and a computer, say what to do, and it runs in the background.
+- **Threads:** a chat with each agent, showing its tool calls, cost and status live. Send the next message, interrupt it or close it.
+- **Run everywhere:** one job on several computers at once, with results side by side.
+- **Computers:** add SSH, Docker or Cua machines, check which agents each has, and open its live desktop.
+
+It runs on `127.0.0.1` only, behind a random token in the link the command prints, and it rejects other hosts, so other websites can't drive it.
+
+![Start a thread](docs/new-thread.jpg)
+
+## SDK in ten lines
+
 ```ts
 import { startThread } from "openspaces"
 
@@ -51,7 +73,6 @@ Adding an agent is one small file: build its argv and map its output lines to ev
 ## CLI
 
 ```sh
-npm install -g github:migasrias2/openspaces
 
 openspaces computers add mini ssh:me@mac-mini.local
 openspaces computers test mini             # reachable? which agents are installed?
@@ -110,13 +131,14 @@ Thread methods: `wait()`, `send(prompt)`, `status()`, `interrupt()` (stops the t
 - **Hosted relay:** use Tailscale (free for personal use) or plain SSH instead.
 - **Share links and team roles:** add teammates as SSH users, or share the machine on your tailnet.
 - **Saved sign-ins (keyvault, teleport):** not yet.
-- **A Mac and iPhone app:** not yet; openspaces is the CLI and SDK.
+- **A native Mac and iPhone app:** not yet. The dashboard is a local web app (`openspaces ui`).
 
 ## Develop
 
 ```sh
 npm install
-npm test            # 75 tests: unit, in-process threads, and the built CLI end to end
+npm test            # unit, in-process threads, the HTTP API, and the built CLI end to end
+npm run dev:ui      # UI with hot reload (proxying to `openspaces ui --port 4600`)
 npm run typecheck
 ```
 

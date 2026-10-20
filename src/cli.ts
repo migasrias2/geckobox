@@ -15,6 +15,7 @@ import {
   type StartFlags,
 } from "./cli/commands.js"
 import { err, out } from "./cli/format.js"
+import { cmdUi } from "./cli/ui.js"
 import { resolveComputer } from "./computers.js"
 import { freePort, runView, viewPlan } from "./view.js"
 
@@ -35,6 +36,7 @@ const HELP = `openspaces: put any coding agent on any of your computers.
   openspaces run --on a,b,c [opts] "<prompt>" the same job on several computers at once
   openspaces view <computer> [--port 5900]    watch and take over its desktop (SSH tunnel or Cua viewer,
                                               no relay, no session or hour limits; --view-only for cua)
+  openspaces ui [--port 4600] [--no-open]     local web UI (127.0.0.1 only, link carries a secret token)
 
 options for start and run:
   --on <computer>        where to run (default local; run takes a comma list)
@@ -66,6 +68,7 @@ async function main(argv: readonly string[]): Promise<number> {
       help: { type: "boolean", short: "h", default: false },
       port: { type: "string" },
       "view-only": { type: "boolean", default: false },
+      open: { type: "boolean", default: true },
     },
   })
   const [command, ...rest] = positionals
@@ -119,6 +122,8 @@ async function main(argv: readonly string[]): Promise<number> {
       })
       return runView(plan, out)
     }
+    case "ui":
+      return cmdUi(values.port ? Number(values.port) : 4600, values.open)
     case "__worker":
       return cmdWorker(need(rest[0], "__worker <id>"))
     default:

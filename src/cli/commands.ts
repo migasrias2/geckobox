@@ -1,28 +1,16 @@
-import { spawn } from "node:child_process"
-import { openSync } from "node:fs"
 import { readFile } from "node:fs/promises"
-import { join } from "node:path"
-import { fileURLToPath } from "node:url"
-import { AGENTS } from "../agents/index.js"
 import { addComputer, describe, loadRegistry, removeComputer, resolveComputer } from "../computers.js"
 import { fanOut } from "../fanout.js"
-import { threadDir } from "../paths.js"
+import { probeComputer } from "../probe.js"
 import { eventsFile, listThreads } from "../store.js"
-import { capture } from "../transport.js"
 import { closeThread, createThread, executeTurn, interruptThread, queueTurn, threadStatus } from "../thread.js"
 import type { AgentName, ThreadState } from "../types.js"
+import { spawnWorker } from "../worker.js"
+
+export { spawnWorker }
 import { err, eventLine, out, threadDetail, threadRow } from "./format.js"
 
-const CLI_PATH = fileURLToPath(new URL("../cli.js", import.meta.url))
 const POLL_MS = 500
-
-/** Run the thread's pending turn in a detached worker that outlives this command. */
-function spawnWorker(id: string): void {
-  const log = openSync(join(threadDir(id), "worker.log"), "a", 0o600)
-  const child = spawn(process.execPath, [CLI_PATH, "__worker", id], { detached: true, stdio: ["ignore", log, log] })
-  child.once("error", (error) => err(`openspaces: could not start the worker: ${error.message}`))
-  child.unref()
-}
 
 export async function waitIdle(id: string): Promise<ThreadState> {
   for (;;) {
@@ -49,12 +37,11 @@ export async function cmdComputers(sub: string | undefined, args: readonly strin
   if (sub === "test") {
     const name = args[0] ?? "local"
     const computer = await resolveComputer(name)
-    const bins = Object.values(AGENTS).map((a) => a.binary).join(" ")
-    const res = await capture(computer, `echo "host: $(uname -sm)"; for b in ${bins}; do command -v "$b" >/dev/null 2>&1 && echo "  ✓ $b" || echo "  - $b"; done`)
+    const res = await probeComputer(computer)
     out(`${name} (${describe(computer)})`)
     out(res.stdout)
-    if (res.code !== 0) err(res.stderr || `exited with code ${res.code}`)
-    return res.code === 0 ? 0 : 1
+    if (!res.ok) err(res.error ?? "check failed")
+    return res.ok ? 0 : 1
   }
   if (sub === undefined || sub === "ls") {
     const registry = await loadRegistry()

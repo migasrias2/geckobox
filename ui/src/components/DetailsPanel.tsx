@@ -1,7 +1,7 @@
 import { Monitor, Pause, Square, X } from "lucide-react"
 import type { Thread } from "../lib/api"
 import { ago, AGENT_LABEL, cost, isBusy, title } from "../lib/format"
-import { moodOf } from "./BotFace"
+import { moodOf } from "./Gecko"
 import { AgentAvatar, Card, IconButton, Row, SectionLabel, StatusPill } from "./ui"
 
 const KIND_LABEL = { local: "This machine", ssh: "Over SSH", container: "Sandbox on this Mac", docker: "Docker container", podman: "Podman container", cua: "Cua sandbox" } as const
@@ -30,7 +30,7 @@ export function DetailsPanel({
         </button>
       </div>
       <div className="flex flex-col items-center px-6 pb-5 text-center">
-        <AgentAvatar agent={thread.agent} size={84} mood={moodOf(thread.status, thread.turns.length > 0)} />
+        <AgentAvatar agent={thread.agent} size={84} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
         <div className="mt-4 line-clamp-2 text-[15px] font-semibold leading-snug">{title(thread)}</div>
         <div className="mt-1 font-mono text-[11.5px] text-mute">{thread.id}</div>
         <div className="mt-3">

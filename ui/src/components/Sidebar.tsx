@@ -1,7 +1,7 @@
-import { Globe2, MonitorSmartphone, Plus, Server } from "lucide-react"
+import { Globe2, Plus, Server } from "lucide-react"
 import type { Computer, Thread } from "../lib/api"
 import { ago, AGENT_LABEL, isBusy, title } from "../lib/format"
-import { moodOf } from "./BotFace"
+import { Gecko, moodOf } from "./Gecko"
 import { AgentAvatar, cx, SectionLabel, Skeleton } from "./ui"
 
 export type View =
@@ -13,8 +13,8 @@ export type View =
 export function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="grid size-8 place-items-center rounded-[10px] border border-accent/30 bg-[radial-gradient(circle_at_30%_25%,#1f4d39,#0b1712_70%)]">
-        <MonitorSmartphone className="size-4 text-accent" strokeWidth={2.2} />
+      <span className="grid size-10 place-items-center rounded-[14px] bg-raised">
+        <Gecko size={30} />
       </span>
       <div className="leading-tight">
         <div className="text-[17px] font-extrabold tracking-tight">openspaces</div>
@@ -50,7 +50,7 @@ function ThreadItem({ thread, active, onClick }: { thread: Thread; active: boole
         thread.status === "closed" && !active && "opacity-55",
       )}
     >
-      <AgentAvatar agent={thread.agent} size={34} mood={moodOf(thread.status, thread.turns.length > 0)} />
+      <AgentAvatar agent={thread.agent} size={34} mood={moodOf(thread.status, thread.turns.at(-1)?.error)} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] text-ink">{title(thread)}</span>
         <span className="block truncate text-[11.5px] text-mute">

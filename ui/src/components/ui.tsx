@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react"
 import { ChevronDown } from "lucide-react"
 import type { AgentName, ThreadStatus } from "../lib/api"
-import { BotFace, type Mood } from "./BotFace"
+import { Gecko, type Mood } from "./Gecko"
 import { isBusy, STATUS_LABEL } from "../lib/format"
 
 export function cx(...parts: Array<string | false | undefined | null>): string {
@@ -79,7 +79,7 @@ export function StatusPill({ status }: { status: ThreadStatus }) {
 }
 
 export function AgentAvatar({ agent, size = 36, busy = false, mood }: { agent: AgentName; size?: number; busy?: boolean; mood?: Mood }) {
-  return <BotFace agent={agent} size={size} mood={mood ?? (busy ? "busy" : "idle")} />
+  return <Gecko agent={agent} size={size} mood={mood ?? (busy ? "busy" : "idle")} />
 }
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {

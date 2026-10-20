@@ -1,7 +1,8 @@
-import { Check, ChevronRight, CircleAlert, Terminal, Wrench } from "lucide-react"
+import { Check, ChevronRight, CircleAlert, Terminal } from "lucide-react"
 import { Fragment, useState, type ReactNode } from "react"
 import type { AgentName, ThreadEvent, TurnRecord } from "../lib/api"
 import { duration } from "../lib/format"
+import { Thinking, prettyToolName, type ToolCall } from "./Thinking"
 import { AgentAvatar, cx } from "./ui"
 
 /** Minimal, safe rich text: fenced code, inline code and bold. No HTML injection. */
@@ -63,24 +64,32 @@ function inline(text: string): ReactNode[] {
 
 type Block =
   | { readonly kind: "text"; readonly text: string }
-  | { readonly kind: "tools"; readonly names: readonly string[] }
+  | { readonly kind: "tools"; readonly calls: readonly ToolCall[]; readonly endAt?: string }
   | { readonly kind: "logs"; readonly lines: readonly string[] }
 
 /** Harmless notices agents print on every run. */
 const NOISE = /claude\.ai connectors are disabled/
 
+/** Stamp a trailing tools block with the time the next thing happened. */
+function closeTools(blocks: Block[], at: string): Block[] {
+  const last = blocks.at(-1)
+  return last?.kind === "tools" && !last.endAt ? [...blocks.slice(0, -1), { ...last, endAt: at }] : blocks
+}
+
 /** Group a turn's events into readable blocks. Pure. */
 export function toBlocks(events: readonly ThreadEvent[], agent: AgentName): Block[] {
   const joiner = agent === "shell" ? "\n" : "\n\n"
-  return events.reduce<Block[]>((blocks, e) => {
+  return events.reduce<Block[]>((all, e) => {
+    if (e.type === "stderr" && NOISE.test(e.text)) return all
+    const blocks = e.type === "text" || e.type === "stderr" ? closeTools(all, e.at) : all
     const last = blocks.at(-1)
     if (e.type === "text") {
       return last?.kind === "text" ? [...blocks.slice(0, -1), { kind: "text", text: `${last.text}${joiner}${e.text}` }] : [...blocks, { kind: "text", text: e.text }]
     }
     if (e.type === "tool") {
-      return last?.kind === "tools" ? [...blocks.slice(0, -1), { kind: "tools", names: [...last.names, e.name] }] : [...blocks, { kind: "tools", names: [e.name] }]
+      const call: ToolCall = { at: e.at, name: e.name, target: e.target, point: e.point }
+      return last?.kind === "tools" && !last.endAt ? [...blocks.slice(0, -1), { kind: "tools", calls: [...last.calls, call] }] : [...blocks, { kind: "tools", calls: [call] }]
     }
-    if (e.type === "stderr" && NOISE.test(e.text)) return blocks
     if (e.type === "stderr") {
       return last?.kind === "logs" ? [...blocks.slice(0, -1), { kind: "logs", lines: [...last.lines, e.text] }] : [...blocks, { kind: "logs", lines: [e.text] }]
     }
@@ -89,25 +98,7 @@ export function toBlocks(events: readonly ThreadEvent[], agent: AgentName): Bloc
 }
 
 /** `mcp__cua__space_bash` → `cua · space_bash`. */
-export function prettyTool(name: string): string {
-  const m = /^mcp__([^_]+(?:_[^_]+)*?)__(.+)$/.exec(name)
-  return m ? `${m[1]} · ${m[2]}` : name
-}
-
-function ToolChips({ names }: { names: readonly string[] }) {
-  const counts = names.reduce<Record<string, number>>((acc, n) => ({ ...acc, [n]: (acc[n] ?? 0) + 1 }), {})
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 pl-1">
-      <Wrench className="size-3.5 text-mute" />
-      {Object.entries(counts).map(([name, n]) => (
-        <span key={name} className="rounded-full border border-line bg-raised px-2 py-0.5 font-mono text-[11.5px] text-dim">
-          {prettyTool(name)}
-          {n > 1 && <span className="text-mute"> ×{n}</span>}
-        </span>
-      ))}
-    </div>
-  )
-}
+export const prettyTool = prettyToolName
 
 function Logs({ lines }: { lines: readonly string[] }) {
   const [open, setOpen] = useState(false)
@@ -150,7 +141,13 @@ export function AgentTurn({ turn, events, agent, liveTool }: { turn: TurnRecord;
               <RichText text={b.text} mono={agent === "shell"} />
             </div>
           ) : b.kind === "tools" ? (
-            <ToolChips key={i} names={b.names} />
+            <Thinking
+              key={i}
+              calls={b.calls}
+              running={running && i === blocks.length - 1}
+              startAt={b.calls[0]?.at ?? turn.startedAt}
+              endAt={b.endAt ?? turn.endedAt}
+            />
           ) : (
             <Logs key={i} lines={b.lines} />
           ),

@@ -1,6 +1,41 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type WheelEvent } from "react"
 import { api, type ScreenFrame, type ScreenInput } from "../lib/api"
-import { cx, Skeleton } from "./ui"
+import { cx } from "./ui"
+
+/** macOS-style pointer. The agent's one is green-rimmed so you can tell it from yours. */
+export function Pointer({ className, style, agent = false }: { className?: string; style?: React.CSSProperties; agent?: boolean }) {
+  return (
+    <svg className={className} style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,.45))", ...style }} width="26" height="26" viewBox="0 0 24 24" aria-hidden>
+      <path
+        d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"
+        fill="#111318"
+        stroke={agent ? "#3ee39b" : "#fff"}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** Spinner on black while the first frame arrives. */
+export function Connecting({ on, className }: { on: string; className?: string }) {
+  const size = 26
+  const r = (size - 2) / 2
+  const c = 2 * Math.PI * r
+  return (
+    <div className={cx("relative aspect-[16/10] w-full overflow-hidden rounded-[22px] bg-black", className)}>
+      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <svg width={size} height={size} className="block animate-spin" aria-hidden>
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,.18)" strokeWidth="2" />
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#3ee39b" strokeWidth="2" strokeLinecap="round" strokeDasharray={`${c * 0.28} ${c * 0.72}`} />
+        </svg>
+      </span>
+      <span className="absolute inset-x-0 text-center text-[12.5px] font-semibold text-white/70" style={{ top: "calc(50% + 28px)" }}>
+        Connecting to {on.replace(/^cua:(local:)?/, "")}'s screen
+      </span>
+    </div>
+  )
+}
 
 export interface AgentPoint {
   readonly key: string
@@ -94,6 +129,7 @@ export function LiveScreen({
   const typed = useRef("")
   const flush = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [mine, setMine] = useState<readonly AgentPoint[]>([])
+  const [mouse, setMouse] = useState<{ x: number; y: number } | undefined>()
   const w = frame?.width ?? 1280
   const h = frame?.height ?? 800
 
@@ -101,6 +137,32 @@ export function LiveScreen({
   const at = (e: MouseEvent | WheelEvent) => {
     const r = img.current!.getBoundingClientRect()
     return { x: Math.round(((e.clientX - r.left) / r.width) * w), y: Math.round(((e.clientY - r.top) / r.height) * h) }
+  }
+  // Trackpads fire dozens of tiny wheel events a second: add them up and send one scroll at a time.
+  const wheel = useRef({ delta: 0, x: 0, y: 0, busy: false, timer: undefined as ReturnType<typeof setTimeout> | undefined })
+  const flushWheel = () => {
+    const w = wheel.current
+    w.timer = undefined
+    if (w.busy || Math.abs(w.delta) < 4) return
+    const amount = Math.min(15, Math.max(1, Math.round(Math.abs(w.delta) / 40)))
+    const direction = w.delta > 0 ? "down" : "up"
+    w.delta = 0
+    w.busy = true
+    void api
+      .input(on, { action: "scroll", x: w.x, y: w.y, direction, amount })
+      .catch(() => undefined)
+      .finally(() => {
+        w.busy = false
+        if (Math.abs(w.delta) >= 4 && !w.timer) w.timer = setTimeout(flushWheel, 0)
+      })
+  }
+  const onWheel = (e: WheelEvent) => {
+    const w = wheel.current
+    const p = at(e)
+    w.delta += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY
+    w.x = p.x
+    w.y = p.y
+    if (!w.timer) w.timer = setTimeout(flushWheel, 120)
   }
   const ripple = (x: number, y: number) => setMine((p) => [...p.slice(-4), { key: `${Date.now()}`, x, y }])
 
@@ -127,7 +189,7 @@ export function LiveScreen({
   }
 
   if (!frame?.image) {
-    if (!error) return <Skeleton className={cx("aspect-[16/10] w-full rounded-[22px]", className)} />
+    if (!error) return <Connecting on={on} className={className} />
     return (
       <div className={cx("grid aspect-[16/10] w-full place-items-center rounded-[22px] bg-raised p-6 text-center", className)}>
         <div>
@@ -145,7 +207,9 @@ export function LiveScreen({
     <div
       ref={box}
       data-capture-keys={interactive ? "" : undefined}
-      className={cx("relative w-full select-none overflow-hidden rounded-[22px] bg-black outline-none", interactive && "cursor-default ring-2 ring-accent/70 focus:ring-accent", className)}
+      className={cx("relative w-full select-none overflow-hidden rounded-[22px] bg-black outline-none", interactive && "[cursor:none] ring-2 ring-accent/70 focus:ring-accent", className)}
+      onMouseMove={interactive ? (e) => { const r = e.currentTarget.getBoundingClientRect(); setMouse({ x: e.clientX - r.left, y: e.clientY - r.top }) } : undefined}
+      onMouseLeave={interactive ? () => setMouse(undefined) : undefined}
       tabIndex={interactive ? 0 : -1}
       onKeyDown={interactive ? onKey : undefined}
     >
@@ -158,7 +222,7 @@ export function LiveScreen({
         onClick={interactive ? (e) => { const p = at(e); ripple(p.x, p.y); send({ action: "click", ...p }) } : undefined}
         onDoubleClick={interactive ? (e) => send({ action: "double_click", ...at(e) }) : undefined}
         onContextMenu={interactive ? (e) => { e.preventDefault(); send({ action: "right_click", ...at(e) }) } : undefined}
-        onWheel={interactive ? (e) => send({ action: "scroll", ...at(e), direction: e.deltaY > 0 ? "down" : "up", amount: Math.min(5, Math.max(1, Math.round(Math.abs(e.deltaY) / 60))) }) : undefined}
+        onWheel={interactive ? onWheel : undefined}
       />
       {[...points, ...mine].map((p) => (
         <span
@@ -167,21 +231,14 @@ export function LiveScreen({
           style={{ left: pct(p.x, w), top: pct(p.y, h) }}
         />
       ))}
+      {interactive && mouse && <Pointer className="pointer-events-none absolute z-10" style={{ left: mouse.x - 4, top: mouse.y - 4 }} />}
       {stale && (
         <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11.5px] font-bold text-warn backdrop-blur">
           Reconnecting…
         </span>
       )}
       {frame.cursor && (
-        <svg
-          className="cursor-glide pointer-events-none absolute drop-shadow-[0_2px_6px_rgba(0,0,0,.6)]"
-          style={{ left: pct(frame.cursor.x, w), top: pct(frame.cursor.y, h) }}
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-        >
-          <path d="M3 2l7.5 19 2.6-7.6L21 10.8z" fill="#3ee39b" stroke="#03150c" strokeWidth="1.4" strokeLinejoin="round" />
-        </svg>
+        <Pointer className="cursor-glide pointer-events-none absolute" style={{ left: pct(frame.cursor.x, w), top: pct(frame.cursor.y, h) }} agent />
       )}
     </div>
   )

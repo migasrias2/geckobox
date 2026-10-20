@@ -110,7 +110,8 @@ function inputCommand(action: InputAction): string {
     case "key":
       return `xdotool key -- ${quote(action.key)}`
     case "scroll":
-      return `xdotool mousemove ${action.x} ${action.y} click --repeat ${action.amount} ${action.direction === "up" ? 4 : 5}`
+      // A small delay between wheel ticks: Firefox and Chromium drop ticks that arrive together.
+      return `xdotool mousemove ${action.x} ${action.y} click --repeat ${action.amount} --delay 25 ${action.direction === "up" ? 4 : 5}`
   }
 }
 
@@ -125,6 +126,16 @@ export async function sendInput(computer: Computer, action: InputAction): Promis
   if (result.code !== 0) throw noScreen(reasonOf(result))
 }
 
-export async function sendInputOn(on: string, action: InputAction): Promise<void> {
-  return sendInput(await resolveComputer(on), action)
+const queues = new Map<string, Promise<void>>()
+
+/** Inputs to one computer run strictly one after another, in the order they arrived. */
+export function sendInputOn(on: string, action: InputAction): Promise<void> {
+  const previous = queues.get(on) ?? Promise.resolve()
+  const run = previous.catch(() => undefined).then(async () => sendInput(await resolveComputer(on), action))
+  const tail = run.catch(() => undefined)
+  queues.set(on, tail)
+  void tail.then(() => {
+    if (queues.get(on) === tail) queues.delete(on)
+  })
+  return run
 }

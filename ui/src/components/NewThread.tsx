@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { api, type AgentInfo, type AgentName, type Computer, type Thread } from "../lib/api"
 import { AGENT_LABEL } from "../lib/format"
-import { Composer } from "./Composer"
+import { Composer, MODELS } from "./Composer"
 import { Select, Toggle } from "./ui"
 
 const IDEAS = [
@@ -25,6 +25,7 @@ export function NewThread({
   const [autoApprove, setAutoApprove] = useState(false)
   const [computerTools, setComputerTools] = useState(true)
   const [cwd, setCwd] = useState("")
+  const [model, setModel] = useState<string | undefined>()
   const [idea, setIdea] = useState("")
 
   return (
@@ -46,12 +47,19 @@ export function NewThread({
             big
             autoFocus
             initial={idea}
+            computers={computers ?? [{ name: "local", address: "local", kind: "local" as const }]}
+            computer={on}
+            onPickComputer={setOn}
+            models={MODELS}
+            model={model}
+            onModelChange={setModel}
             placeholder="What should it do?"
             onSubmit={async (prompt) => {
               const thread = await api.start({
                 agent,
                 on,
                 prompt,
+                ...(model ? { model } : {}),
                 autoApprove,
                 ...(computerTools ? { allowTools: ["mcp__cua"] } : {}),
                 ...(cwd.trim() ? { cwd: cwd.trim() } : {}),
@@ -65,13 +73,6 @@ export function NewThread({
                     <option key={a.name} value={a.name}>
                       {AGENT_LABEL[a.name]}
                       {a.tested ? "" : " (beta)"}
-                    </option>
-                  ))}
-                </Select>
-                <Select value={on} onChange={(e) => setOn(e.target.value)} aria-label="Computer">
-                  {(computers ?? [{ name: "local", address: "local", kind: "local" as const }]).map((c) => (
-                    <option key={c.name} value={c.name}>
-                      on {c.name === "local" ? "this Mac" : c.name}
                     </option>
                   ))}
                 </Select>

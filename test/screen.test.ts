@@ -53,8 +53,8 @@ describe("inputScript", () => {
     expect(body(inputScript({ action: "right_click", x: 1, y: 2 }))).toBe("xdotool mousemove 1 2 click 3")
     expect(body(inputScript({ action: "key", key: "ctrl+l" }))).toBe("xdotool key -- ctrl+l")
     expect(body(inputScript({ action: "type", text: "hello world" }))).toBe("xdotool type --delay 8 -- 'hello world'")
-    expect(body(inputScript({ action: "scroll", x: 5, y: 6, direction: "up", amount: 3 }))).toBe("xdotool mousemove 5 6 click --repeat 3 4")
-    expect(body(inputScript({ action: "scroll", x: 5, y: 6, direction: "down", amount: 2 }))).toBe("xdotool mousemove 5 6 click --repeat 2 5")
+    expect(body(inputScript({ action: "scroll", x: 5, y: 6, direction: "up", amount: 3 }))).toBe("xdotool mousemove 5 6 click --repeat 3 --delay 25 4")
+    expect(body(inputScript({ action: "scroll", x: 5, y: 6, direction: "down", amount: 2 }))).toBe("xdotool mousemove 5 6 click --repeat 2 --delay 25 5")
   })
   it("detects the display like the capture script", () => {
     expect(inputScript({ action: "move", x: 0, y: 0 })).toContain('[ -z "$DISPLAY" ]')

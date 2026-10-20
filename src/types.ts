@@ -56,7 +56,8 @@ export interface ThreadState {
 export type AgentEvent =
   | { readonly type: "session"; readonly sessionId: string }
   | { readonly type: "text"; readonly text: string }
-  | { readonly type: "tool"; readonly name: string }
+  /** `target`: the computer a tool acted on, when the tool names one (e.g. a Cua Space). */
+  | { readonly type: "tool"; readonly name: string; readonly target?: string }
   | { readonly type: "result"; readonly ok: boolean; readonly text: string; readonly costUsd?: number }
   | { readonly type: "stderr"; readonly text: string }
 

@@ -1,6 +1,6 @@
 import { ExternalLink, Monitor, X } from "lucide-react"
 import { useEffect, useState } from "react"
-import { api, type ViewResult } from "../lib/api"
+import { api, type Computer, type ViewResult } from "../lib/api"
 import { Button, Skeleton } from "./ui"
 
 /** A computer's live desktop: embedded (Cua viewer) or opened in the system VNC app. */
@@ -18,7 +18,7 @@ export function DesktopPane({ on, onClose }: { on: string; onClose: () => void }
     <section className="flex h-full min-w-0 flex-1 flex-col border-l border-line bg-bg">
       <header className="flex h-14 items-center gap-2.5 border-b border-line px-4">
         <Monitor className="size-4 text-accent" />
-        <span className="text-[14px] font-medium">{on}'s desktop</span>
+        <span className="text-[14px] font-medium">{label(on)}'s desktop</span>
         <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[11px] font-medium text-accent">live · no relay</span>
         <div className="ml-auto flex items-center gap-1">
           {view?.kind === "embed" && (
@@ -54,10 +54,45 @@ export function DesktopPane({ on, onClose }: { on: string; onClose: () => void }
             action={<Button onClick={() => window.open(view.url)}>Open again</Button>}
           />
         ) : (
-          <Notice title="This is your machine" body={view.message} />
+          <Notice title={on === "local" ? "This is your machine" : "No desktop here"} body={view.message} action={<OtherDesktops current={on} />} />
         )}
       </div>
     </section>
+  )
+}
+
+function label(on: string): string {
+  return on.replace(/^cua:(local:)?/, "")
+}
+
+/** Desktops of other computers, for when this one has none to show. */
+function OtherDesktops({ current }: { current: string }) {
+  const [list, setList] = useState<readonly Computer[]>([])
+  const [opening, setOpening] = useState<string | undefined>()
+  useEffect(() => {
+    api.computers().then((all) => setList(all.filter((c) => c.name !== current && (c.kind === "cua" || c.kind === "ssh"))), () => setList([]))
+  }, [current])
+  if (list.length === 0) return null
+  const open = async (name: string) => {
+    setOpening(name)
+    try {
+      const v = await api.view(name)
+      if (v.kind !== "self") window.open(v.url, "_blank", "noopener")
+    } finally {
+      setOpening(undefined)
+    }
+  }
+  return (
+    <div>
+      <div className="mb-2 text-[12px] text-mute">Open another computer's desktop</div>
+      <div className="flex flex-wrap justify-center gap-2">
+        {list.map((c) => (
+          <Button key={c.name} size="sm" onClick={() => void open(c.name)} disabled={opening === c.name}>
+            <Monitor className="size-3.5" /> {opening === c.name ? "Opening…" : c.name}
+          </Button>
+        ))}
+      </div>
+    </div>
   )
 }
 

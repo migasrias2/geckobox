@@ -1,6 +1,16 @@
 import type { AgentEvent } from "../types.js"
 import { parseJson, str, type AgentAdapter } from "./types.js"
 
+const TARGET = /^[A-Za-z0-9_][A-Za-z0-9_.:@-]{0,127}$/
+
+/** The Cua Space or sandbox a `mcp__cua__*` tool call acts on, if it names one. */
+export function cuaTarget(tool: string, input: unknown): string | undefined {
+  if (!tool.startsWith("mcp__cua__") || !input || typeof input !== "object") return undefined
+  const fields = input as Record<string, unknown>
+  const value = [fields.space, fields.name, fields.sandbox].find((v): v is string => typeof v === "string" && TARGET.test(v))
+  return value
+}
+
 /** Claude Code in print mode with the stream-json output format. */
 export const claudeCode: AgentAdapter = {
   name: "claude-code",
@@ -33,7 +43,10 @@ export const claudeCode: AgentAdapter = {
       return content.flatMap((block): AgentEvent[] => {
         const b = block as Record<string, unknown>
         if (b.type === "text" && typeof b.text === "string") return [{ type: "text", text: b.text }]
-        if (b.type === "tool_use" && typeof b.name === "string") return [{ type: "tool", name: b.name }]
+        if (b.type === "tool_use" && typeof b.name === "string") {
+          const target = cuaTarget(b.name, b.input)
+          return [{ type: "tool", name: b.name, ...(target ? { target } : {}) }]
+        }
         return []
       })
     }

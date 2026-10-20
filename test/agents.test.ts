@@ -101,3 +101,15 @@ describe("shell", () => {
     expect(a.parse("line")).toEqual([{ type: "text", text: "line" }])
   })
 })
+
+describe("cua tool targets", () => {
+  it("records which Cua computer a tool acted on", async () => {
+    const { cuaTarget } = await import("../src/agents/claudeCode.js")
+    const a = getAgent("claude-code")
+    const line = JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__cua__space_bash", input: { space: "claude-desk", command: "ls" } }] } })
+    expect(a.parse(line)).toEqual([{ type: "tool", name: "mcp__cua__space_bash", target: "claude-desk" }])
+    expect(cuaTarget("mcp__cua__sandbox_open_browser", { name: "local:claude-desk" })).toBe("local:claude-desk")
+    expect(cuaTarget("Bash", { space: "x" })).toBeUndefined()
+    expect(cuaTarget("mcp__cua__space_bash", { space: "x; rm -rf /" })).toBeUndefined()
+  })
+})

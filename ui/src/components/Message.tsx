@@ -88,6 +88,12 @@ export function toBlocks(events: readonly ThreadEvent[], agent: AgentName): Bloc
   }, [])
 }
 
+/** `mcp__cua__space_bash` → `cua · space_bash`. */
+function prettyTool(name: string): string {
+  const m = /^mcp__([^_]+(?:_[^_]+)*?)__(.+)$/.exec(name)
+  return m ? `${m[1]} · ${m[2]}` : name
+}
+
 function ToolChips({ names }: { names: readonly string[] }) {
   const counts = names.reduce<Record<string, number>>((acc, n) => ({ ...acc, [n]: (acc[n] ?? 0) + 1 }), {})
   return (
@@ -95,7 +101,7 @@ function ToolChips({ names }: { names: readonly string[] }) {
       <Wrench className="size-3.5 text-mute" />
       {Object.entries(counts).map(([name, n]) => (
         <span key={name} className="rounded-full border border-line bg-raised px-2 py-0.5 font-mono text-[11.5px] text-dim">
-          {name}
+          {prettyTool(name)}
           {n > 1 && <span className="text-mute"> ×{n}</span>}
         </span>
       ))}

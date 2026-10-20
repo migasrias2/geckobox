@@ -29,6 +29,9 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
   if (error && !thread) return <Empty text={error} />
   if (!thread) return <Loading />
 
+  // On "local", an agent may drive a Cua computer through its MCP tools: show that one.
+  const usedTargets = [...new Set(events.flatMap((e) => (e.type === "tool" && e.target ? [e.target] : [])))]
+  const desktopOn = thread.computer.kind === "local" && usedTargets.length > 0 ? `cua:${usedTargets.at(-1)}` : thread.on
   const busy = isBusy(thread.status)
   const closed = thread.status === "closed"
   const liveTool = [...events].reverse().find((e) => e.type === "tool")
@@ -90,7 +93,7 @@ export function ThreadView({ id, onChanged }: { id: string; onChanged: () => voi
         </div>
       </section>
 
-      {desktop && <DesktopPane on={thread.on} onClose={() => setDesktop(false)} />}
+      {desktop && <DesktopPane on={desktopOn} onClose={() => setDesktop(false)} />}
       {details && !desktop && (
         <DetailsPanel
           thread={thread}

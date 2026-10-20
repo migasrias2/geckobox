@@ -32,7 +32,7 @@ export interface Thread {
 }
 export type ThreadEvent =
   | { readonly at: string; readonly turn: number; readonly type: "text"; readonly text: string }
-  | { readonly at: string; readonly turn: number; readonly type: "tool"; readonly name: string }
+  | { readonly at: string; readonly turn: number; readonly type: "tool"; readonly name: string; readonly target?: string }
   | { readonly at: string; readonly turn: number; readonly type: "stderr"; readonly text: string }
   | { readonly at: string; readonly turn: number; readonly type: "session"; readonly sessionId: string }
   | { readonly at: string; readonly turn: number; readonly type: "result"; readonly ok: boolean; readonly text: string }

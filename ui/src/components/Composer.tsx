@@ -353,6 +353,50 @@ export function Composer({
   const computerLabel = computer === "local" ? "This Mac" : computer
   const shownPlaceholder = listening ? interim || "Listening…" : disabled && disabledHint ? disabledHint : placeholder
 
+  const actions = (
+    <>
+          {models && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen((o) => (o === "model" ? undefined : "model"))}
+          aria-label="Model"
+          className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-dim transition hover:bg-hover hover:text-ink active:scale-[.97] disabled:opacity-50"
+        >
+          {modelLabel}
+          <ChevronDown className="size-3.5 text-mute" />
+        </button>
+      )}
+      {canSpeak && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={toggleMic}
+          aria-label={listening ? "Stop dictation" : "Start dictation"}
+          aria-pressed={listening}
+          className={cx(
+            "grid size-9 shrink-0 place-items-center rounded-full transition active:scale-[.94] disabled:opacity-50",
+            listening ? "bg-accent/15 text-accent" : "text-dim hover:bg-hover hover:text-ink",
+          )}
+        >
+          {listening ? <Equaliser /> : <Mic className="size-[18px]" strokeWidth={2} />}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => void send()}
+        disabled={!sendable}
+        aria-label="Send"
+        className={cx(
+          "grid size-9 shrink-0 place-items-center rounded-full transition active:scale-[.94]",
+          sendable ? "bg-accent text-accent-ink hover:bg-[#4ade9f]" : "bg-hover text-mute",
+        )}
+      >
+        <ArrowUp className={cx("size-[18px]", sending && "animate-pulse")} strokeWidth={2.6} />
+      </button>
+    </>
+  )
+
   return (
     <div ref={root} className="relative">
       <style>{CSS}</style>
@@ -375,7 +419,7 @@ export function Composer({
       >
         {sweep > 0 && <span key={sweep} aria-hidden className="os-sweep pointer-events-none absolute inset-0 opacity-0" />}
         <div className="relative flex items-end gap-1.5 p-2">
-          {hasComputers && (
+          {hasComputers && !big && (
             <button
               type="button"
               aria-label="Choose a computer"
@@ -401,63 +445,26 @@ export function Composer({
             placeholder={shownPlaceholder}
             className={cx(
               "block min-w-0 flex-1 resize-none bg-transparent leading-6 text-ink outline-none placeholder:text-mute",
-              big ? "min-h-[72px] px-2 py-2 text-[15px]" : "px-2 py-1.5 text-[14px]",
+              big ? "min-h-[64px] px-3 pt-3 pb-1 text-[15px]" : "px-2 py-1.5 text-[14px]",
               !hasComputers && !big && "pl-3",
             )}
           />
-          {models && (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => setOpen((o) => (o === "model" ? undefined : "model"))}
-              aria-label="Model"
-              className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-dim transition hover:bg-hover hover:text-ink active:scale-[.97] disabled:opacity-50"
-            >
-              {modelLabel}
-              <ChevronDown className="size-3.5 text-mute" />
-            </button>
-          )}
-          {canSpeak && (
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={toggleMic}
-              aria-label={listening ? "Stop dictation" : "Start dictation"}
-              aria-pressed={listening}
-              className={cx(
-                "grid size-9 shrink-0 place-items-center rounded-full transition active:scale-[.94] disabled:opacity-50",
-                listening ? "bg-accent/15 text-accent" : "text-dim hover:bg-hover hover:text-ink",
-              )}
-            >
-              {listening ? <Equaliser /> : <Mic className="size-[18px]" strokeWidth={2} />}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => void send()}
-            disabled={!sendable}
-            aria-label="Send"
-            className={cx(
-              "grid size-9 shrink-0 place-items-center rounded-full transition active:scale-[.94]",
-              sendable ? "bg-accent text-accent-ink hover:bg-[#4ade9f]" : "bg-hover text-mute",
-            )}
-          >
-            <ArrowUp className={cx("size-[18px]", sending && "animate-pulse")} strokeWidth={2.6} />
-          </button>
+          {!big && actions}
         </div>
-        {(footer || computerLabel) && (
-          <div className="relative flex flex-wrap items-center gap-2 px-3 pb-3 pt-0.5">
+        {(footer || computerLabel || big) && (
+          <div className="relative flex flex-wrap items-center gap-1.5 px-3 pb-3 pt-0.5">
             {hasComputers && computerLabel && (
               <button
                 type="button"
                 onClick={() => setOpen((o) => (o === "computers" ? undefined : "computers"))}
-                className="inline-flex h-9 items-center gap-2 rounded-full bg-hover px-3.5 text-[13px] font-semibold text-ink transition hover:bg-[#252a27] active:scale-[.97]"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-dim transition hover:bg-hover hover:text-ink active:scale-[.97]"
               >
                 <Monitor className="size-3.5 text-accent" />
                 on {computerLabel}
               </button>
             )}
             {footer}
+            {big && <div className="ml-auto flex items-center gap-1">{actions}</div>}
           </div>
         )}
       </div>

@@ -81,3 +81,14 @@ body {
   background-image:
     radial-gradient(ellipse 60% 55% at 50% 0%, color-mix(in oklab, var(--color-accent) 11%, transparent), transparent 70%);
 }
+
+/* Gecko icons: a gentle idle bob, a happy wiggle when their button is hovered. */
+@keyframes gi-bob { 0%, 100% { transform: translateY(0) rotate(0) } 50% { transform: translateY(-1.5px) rotate(-2deg) } }
+@keyframes gi-wiggle { 0%, 100% { transform: rotate(0) scale(1.08) } 25% { transform: rotate(-9deg) scale(1.12) } 75% { transform: rotate(8deg) scale(1.12) } }
+@keyframes gi-peek { 0%, 55%, 100% { transform: translateX(0) } 70%, 85% { transform: translateX(-22%) } }
+@keyframes gi-glow { 0%, 100% { filter: drop-shadow(0 0 0 rgba(62,227,155,0)) } 50% { filter: drop-shadow(0 0 6px rgba(62,227,155,.75)) } }
+.gicon { transform-origin: 50% 70%; animation: gi-bob 3.8s ease-in-out infinite; animation-delay: var(--gi-delay, 0s); }
+.gicon-peek { animation: gi-peek 5s ease-in-out infinite; }
+.gicon-glow { animation: gi-bob 3.8s ease-in-out infinite, gi-glow 2.4s ease-in-out infinite; }
+.group:hover .gicon, .gicon:hover { animation: gi-wiggle .55s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .gicon, .group:hover .gicon { animation: none !important; } }

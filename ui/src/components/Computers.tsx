@@ -126,7 +126,7 @@ function AddComputer({ onAdded }: { onAdded: () => void }) {
             key={k.kind}
             onClick={() => setKind(k)}
             className={cx(
-              "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] transition",
+              "group inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] transition",
               k.kind === kind.kind ? "bg-accent/12 text-accent ring-1 ring-accent/30" : "text-dim hover:bg-hover hover:text-ink",
             )}
           >

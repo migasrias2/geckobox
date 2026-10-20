@@ -10,7 +10,28 @@ export type GeckoIconName =
   | "nap" | "hide" | "dizzy" | "king" | "code" | "stand"
 
 /** One of Miguel's dark-mode gecko icons. Decorative unless given a label. */
-export function GeckoIcon({ name, size = 22, label, className }: { name: GeckoIconName; size?: number; label?: string; className?: string }) {
+const MOTION: Partial<Record<GeckoIconName, string>> = { peek: "gicon-peek", idea: "gicon-glow" }
+
+/** Stable per-icon offset so a column of icons never bobs in lockstep. */
+function delayFor(name: string): string {
+  const n = [...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
+  return `${-((n % 17) / 17) * 3.8}s`
+}
+
+export function GeckoIcon({
+  name,
+  size = 22,
+  label,
+  className,
+  still = false,
+}: {
+  name: GeckoIconName
+  size?: number
+  label?: string
+  className?: string
+  /** Turn the animation off (e.g. inside dense lists). */
+  still?: boolean
+}) {
   return (
     <img
       src={`${import.meta.env.BASE_URL}icons/${name}.png`}
@@ -19,7 +40,8 @@ export function GeckoIcon({ name, size = 22, label, className }: { name: GeckoIc
       alt={label ?? ""}
       aria-hidden={label ? undefined : true}
       draggable={false}
-      className={cx("inline-block shrink-0 select-none object-contain", className)}
+      style={{ ["--gi-delay" as string]: delayFor(name) }}
+      className={cx("inline-block shrink-0 select-none object-contain", !still && (MOTION[name] ?? "gicon"), className)}
     />
   )
 }

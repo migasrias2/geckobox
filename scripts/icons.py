@@ -25,6 +25,26 @@ NAMES = {
 }
 
 
+# Luminance -> green ramp: black eyes stay dark, grey spikes go deep green, white bodies go mint.
+RAMP = [(0, (5, 12, 9)), (90, (8, 62, 40)), (150, (12, 128, 80)), (205, (40, 196, 128)), (255, (110, 245, 185))]
+
+
+def tint(rgb: np.ndarray) -> np.ndarray:
+    """Recolour neutral pixels along RAMP; already-coloured pixels (the green badges) are kept."""
+    lum = rgb.mean(axis=2)
+    stops = np.array([s for s, _ in RAMP], dtype=float)
+    cols = np.array([c for _, c in RAMP], dtype=float)
+    green = np.stack([np.interp(lum, stops, cols[:, i]) for i in range(3)], axis=2)
+    # A soft top-left highlight so flat bodies read like the bot geckos' gradient.
+    h, w = lum.shape
+    yy, xx = np.mgrid[0:h, 0:w]
+    light = 1.06 - 0.14 * ((xx / w + yy / h) / 2)
+    green = np.clip(green * light[..., None], 0, 255)
+    saturation = rgb.max(axis=2) - rgb.min(axis=2)
+    keep = saturation > 40
+    return np.where(keep[..., None], rgb, green)
+
+
 def cutout(cell: Image.Image) -> Image.Image:
     rgb = np.array(cell.convert("RGB")).astype(int)
     lum = rgb.mean(axis=2)
@@ -37,7 +57,7 @@ def cutout(cell: Image.Image) -> Image.Image:
     ImageDraw.floodfill(padded, (0, 0), 128)
     filled = np.array(padded)[1:-1, 1:-1] != 128  # foreground plus enclosed holes (the eyes)
     alpha = Image.fromarray((filled * 255).astype(np.uint8)).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
-    out = cell.convert("RGBA")
+    out = Image.fromarray(tint(rgb).astype(np.uint8)).convert("RGBA")
     out.putalpha(alpha)
     box = out.getbbox()
     if box:

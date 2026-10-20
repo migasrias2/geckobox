@@ -29,7 +29,7 @@ function NavItem({ active, onClick, icon, label, badge }: { active: boolean; onC
     <button
       onClick={onClick}
       className={cx(
-        "flex h-10 w-full items-center gap-2.5 rounded-full px-4 text-[14px] font-semibold transition",
+        "group flex h-10 w-full items-center gap-2.5 rounded-full px-4 text-[14px] font-semibold transition",
         active ? "bg-hover text-ink" : "text-dim hover:bg-hover/60 hover:text-ink",
       )}
     >
@@ -84,7 +84,7 @@ export function Sidebar({
         <button
           onClick={() => onView({ kind: "new" })}
           className={cx(
-            "flex h-11 w-full items-center gap-2 rounded-full px-4 text-[14px] font-bold transition active:scale-[.98]",
+            "group flex h-11 w-full items-center gap-2 rounded-full px-4 text-[14px] font-bold transition active:scale-[.98]",
             view.kind === "new" ? "bg-accent text-accent-ink" : "bg-raised text-ink hover:bg-hover",
           )}
         >

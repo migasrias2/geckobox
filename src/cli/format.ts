@@ -1,6 +1,12 @@
 import { describe } from "../computers.js"
 import type { AgentEvent, ThreadState } from "../types.js"
 
+// `openspaces ls | head` closes the pipe early: exit quietly instead of crashing.
+process.stdout.on("error", (error: NodeJS.ErrnoException) => {
+  if (error.code === "EPIPE") process.exit(0)
+  throw error
+})
+
 export function out(line = ""): void {
   process.stdout.write(`${line}\n`)
 }

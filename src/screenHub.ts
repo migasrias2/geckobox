@@ -16,6 +16,8 @@ export interface ScreenHubOptions {
   readonly idleMs?: number
   readonly retryMinMs?: number
   readonly retryMaxMs?: number
+  /** Overlapping capture loops per computer; a capture is mostly round-trip latency, so 2 roughly doubles fps. */
+  readonly workers?: number
 }
 
 interface Waiter {
@@ -27,10 +29,12 @@ interface Waiter {
 interface Entry {
   state: ScreenState
   askedAt: number
-  running: boolean
+  running: number
   failures: number
+  /** Start time of the newest accepted capture, so overlapping loops never go back in time. */
+  acceptedStart: number
   waiters: readonly Waiter[]
-  sleeper?: { readonly timer: ReturnType<typeof setTimeout>; readonly wake: () => void }
+  readonly sleepers: Set<{ readonly timer: ReturnType<typeof setTimeout>; readonly wake: () => void }>
 }
 
 /**
@@ -45,6 +49,7 @@ export class ScreenHub {
   private readonly idleMs: number
   private readonly retryMinMs: number
   private readonly retryMaxMs: number
+  private readonly workers: number
 
   constructor(options: ScreenHubOptions = {}) {
     this.capture = options.capture ?? captureScreenOn
@@ -52,6 +57,7 @@ export class ScreenHub {
     this.idleMs = options.idleMs ?? 8000
     this.retryMinMs = options.retryMinMs ?? 1000
     this.retryMaxMs = options.retryMaxMs ?? 5000
+    this.workers = Math.max(1, options.workers ?? 2)
   }
 
   /** Resolve with the first frame newer than `afterSeq`, or the current state on timeout (or first error). */
@@ -72,9 +78,9 @@ export class ScreenHub {
   close(): void {
     this.closed = true
     for (const entry of this.entries.values()) {
-      if (entry.sleeper) {
-        clearTimeout(entry.sleeper.timer)
-        entry.sleeper.wake()
+      for (const sleeper of [...entry.sleepers]) {
+        clearTimeout(sleeper.timer)
+        sleeper.wake()
       }
       this.release(entry, () => true)
     }
@@ -83,15 +89,17 @@ export class ScreenHub {
   private entryFor(on: string): Entry {
     const found = this.entries.get(on)
     if (found) return found
-    const created: Entry = { state: { seq: 0, at: 0 }, askedAt: 0, running: false, failures: 0, waiters: [] }
+    const created: Entry = { state: { seq: 0, at: 0 }, askedAt: 0, running: 0, failures: 0, acceptedStart: 0, waiters: [], sleepers: new Set() }
     this.entries.set(on, created)
     return created
   }
 
   private ensureRunning(on: string, entry: Entry): void {
-    if (entry.running || this.closed) return
-    entry.running = true
-    void this.loop(on, entry)
+    if (entry.running > 0 || this.closed) return
+    for (let i = 0; i < this.workers; i += 1) {
+      entry.running += 1
+      void this.loop(on, entry, i * Math.round(this.minIntervalMs / 2))
+    }
   }
 
   private release(entry: Entry, ready: (w: Waiter) => boolean): void {
@@ -105,11 +113,14 @@ export class ScreenHub {
 
   private sleep(entry: Entry, ms: number): Promise<void> {
     return new Promise((resolve) => {
-      const wake = () => {
-        entry.sleeper = undefined
-        resolve()
+      const sleeper = {
+        timer: setTimeout(() => sleeper.wake(), ms),
+        wake: () => {
+          entry.sleepers.delete(sleeper)
+          resolve()
+        },
       }
-      entry.sleeper = { timer: setTimeout(wake, ms), wake }
+      entry.sleepers.add(sleeper)
     })
   }
 
@@ -117,14 +128,15 @@ export class ScreenHub {
     return !this.closed && Date.now() - entry.askedAt < this.idleMs
   }
 
-  private async loop(on: string, entry: Entry): Promise<void> {
+  private async loop(on: string, entry: Entry, stagger: number): Promise<void> {
+    if (stagger > 0) await new Promise((r) => setTimeout(r, stagger))
     while (this.watched(entry)) {
       const started = Date.now()
       await this.step(on, entry)
       const wait = entry.failures > 0 ? this.backoff(entry.failures) : this.minIntervalMs - (Date.now() - started)
       if (wait > 0) await this.sleep(entry, wait)
     }
-    entry.running = false
+    entry.running -= 1
   }
 
   private backoff(failures: number): number {
@@ -132,9 +144,12 @@ export class ScreenHub {
   }
 
   private async step(on: string, entry: Entry): Promise<void> {
+    const started = Date.now()
     try {
       const frame = await this.capture(on)
       entry.failures = 0
+      if (started < entry.acceptedStart) return // an overlapping capture already delivered something newer
+      entry.acceptedStart = started
       entry.state = { seq: entry.state.seq + 1, at: Date.now(), frame }
       this.release(entry, (w) => entry.state.seq > w.afterSeq)
     } catch (error) {

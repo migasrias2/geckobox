@@ -30,8 +30,10 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)
-      if (!typing && e.key.toLowerCase() === "n" && !e.metaKey && !e.ctrlKey) setView({ kind: "new" })
+      const el = e.target instanceof HTMLElement ? e.target : undefined
+      const typing = el !== undefined && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)
+      const remote = el?.closest("[data-capture-keys]") != null || document.querySelector("[data-takeover]") !== null
+      if (!typing && !remote && e.key.toLowerCase() === "n" && !e.metaKey && !e.ctrlKey && !e.altKey) setView({ kind: "new" })
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)

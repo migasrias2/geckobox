@@ -32,8 +32,13 @@ export function useScreen(on: string) {
           }
         } catch (e) {
           if (!alive) return
-          setError((e as Error).message)
-          await sleep(3000)
+          const message = (e as Error).message
+          if (/x-openspaces-token/.test(message)) {
+            setError("This page's link is out of date. Open the new link that `openspaces ui` printed.")
+            return
+          }
+          setError(message)
+          await sleep(1500)
         }
       }
     }
@@ -44,6 +49,8 @@ export function useScreen(on: string) {
   }, [on])
   return { frame, error }
 }
+
+export type Screen = ReturnType<typeof useScreen>
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -64,15 +71,26 @@ export function LiveScreen({
   frame,
   points = [],
   interactive = false,
+  error,
   className,
 }: {
   on: string
   frame: ScreenFrame | undefined
   points?: readonly AgentPoint[]
   interactive?: boolean
+  error?: string
   className?: string
 }) {
   const img = useRef<HTMLImageElement>(null)
+  const box = useRef<HTMLDivElement>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (interactive) box.current?.focus()
+  }, [interactive, frame?.image !== undefined])
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
   const typed = useRef("")
   const flush = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [mine, setMine] = useState<readonly AgentPoint[]>([])
@@ -87,6 +105,9 @@ export function LiveScreen({
   const ripple = (x: number, y: number) => setMine((p) => [...p.slice(-4), { key: `${Date.now()}`, x, y }])
 
   const onKey = (e: KeyboardEvent) => {
+    // Every key belongs to the remote computer while you have control: never to app shortcuts.
+    e.stopPropagation()
+    if (e.key === "Escape" && e.shiftKey) return
     const key = keyFor(e)
     e.preventDefault()
     if (key) {
@@ -105,12 +126,26 @@ export function LiveScreen({
     }
   }
 
-  if (!frame?.image) return <Skeleton className={cx("aspect-[16/10] w-full rounded-[22px]", className)} />
+  if (!frame?.image) {
+    if (!error) return <Skeleton className={cx("aspect-[16/10] w-full rounded-[22px]", className)} />
+    return (
+      <div className={cx("grid aspect-[16/10] w-full place-items-center rounded-[22px] bg-raised p-6 text-center", className)}>
+        <div>
+          <div className="mx-auto mb-3 size-2.5 rounded-full bg-warn pulse-ring" />
+          <div className="text-[14px] font-bold">Can't reach {on}'s screen</div>
+          <div className="mx-auto mt-1 max-w-md text-[12.5px] text-dim">{error}</div>
+        </div>
+      </div>
+    )
+  }
+  const stale = frame.at !== undefined && now - frame.at > 4000
 
   const pct = (v: number, of: number) => `${(v / of) * 100}%`
   return (
     <div
-      className={cx("relative w-full select-none overflow-hidden rounded-[22px] bg-black outline-none", interactive && "cursor-none ring-2 ring-accent/70", className)}
+      ref={box}
+      data-capture-keys={interactive ? "" : undefined}
+      className={cx("relative w-full select-none overflow-hidden rounded-[22px] bg-black outline-none", interactive && "cursor-default ring-2 ring-accent/70 focus:ring-accent", className)}
       tabIndex={interactive ? 0 : -1}
       onKeyDown={interactive ? onKey : undefined}
     >
@@ -132,6 +167,11 @@ export function LiveScreen({
           style={{ left: pct(p.x, w), top: pct(p.y, h) }}
         />
       ))}
+      {stale && (
+        <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11.5px] font-bold text-warn backdrop-blur">
+          Reconnecting…
+        </span>
+      )}
       {frame.cursor && (
         <svg
           className="cursor-glide pointer-events-none absolute drop-shadow-[0_2px_6px_rgba(0,0,0,.6)]"

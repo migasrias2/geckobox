@@ -124,7 +124,7 @@ describe("ScreenHub", () => {
       if (fail-- > 0) throw new Error("No screen: boom")
       return frame(9)
     })
-    const hub = new ScreenHub({ capture })
+    const hub = new ScreenHub({ capture, workers: 1 })
     const failed = await hub.next("pc", 0)
     expect(failed).toMatchObject({ seq: 0, error: "No screen: boom" })
     const second = hub.next("pc", 0)
@@ -137,6 +137,27 @@ describe("ScreenHub", () => {
     expect(state.error).toBeUndefined()
     expect(times[1]! - times[0]!).toBe(1000)
     expect(times[2]! - times[1]!).toBe(2000)
+    hub.close()
+  })
+
+  it("runs overlapping workers and never goes back in time", async () => {
+    // Worker 1 starts first but finishes last: its stale frame must be dropped.
+    const delays = [500, 100, 100, 100, 100, 100]
+    let n = 0
+    const capture = vi.fn(async () => {
+      const id = n++
+      await new Promise((r) => setTimeout(r, delays[id] ?? 100))
+      return frame(id)
+    })
+    const hub = new ScreenHub({ capture, workers: 2, minIntervalMs: 100 })
+    const first = hub.next("pc", 0, 5000)
+    await vi.advanceTimersByTimeAsync(200)
+    const got = await first
+    expect(got.frame?.cursor.x).toBe(1)
+    await vi.advanceTimersByTimeAsync(400)
+    const later = await hub.next("pc", got.seq, 5000)
+    expect(later.frame?.cursor.x).not.toBe(0)
+    expect(capture.mock.calls.length).toBeGreaterThanOrEqual(3)
     hub.close()
   })
 

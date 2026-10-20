@@ -1,7 +1,7 @@
 import { Hand, Maximize2, Monitor, Pause, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { api, type Computer } from "../lib/api"
-import { LiveScreen, useScreen, type AgentPoint } from "./LiveScreen"
+import { LiveScreen, useScreen, type AgentPoint, type Screen } from "./LiveScreen"
 import { Button, cx } from "./ui"
 
 function label(on: string): string {
@@ -30,7 +30,13 @@ export function ScreenPane({
   const [takeover, setTakeover] = useState(false)
   useEffect(() => setPicked(undefined), [on])
   const target = picked ?? on
-  const { frame, error } = useScreen(target)
+  const screen = useScreen(target)
+  const { frame, error } = screen
+  const takeOver = () => {
+    // Like Grok Bot: taking control pauses a working agent so you don't fight over the mouse.
+    if (busy && onPause) onPause()
+    setTakeover(true)
+  }
   const noScreen = !frame && error !== undefined
 
   return (
@@ -45,7 +51,7 @@ export function ScreenPane({
         )}
         <div className="ml-auto flex items-center gap-1.5">
           {frame && (
-            <Button size="sm" onClick={() => setTakeover(true)}>
+            <Button size="sm" onClick={takeOver}>
               <Hand className="size-3.5" /> Take over
             </Button>
           )}
@@ -62,7 +68,7 @@ export function ScreenPane({
           <NoScreen on={target} reason={error} onPick={setPicked} />
         ) : (
           <>
-            <LiveScreen on={target} frame={frame} points={points} />
+            <LiveScreen on={target} frame={frame} error={error} points={points} />
             <div className="mt-3 flex items-center justify-between gap-3 rounded-full bg-raised/70 py-1.5 pl-4 pr-1.5 text-[13px]">
               <span className="flex items-center gap-2 font-semibold text-dim">
                 <span className={cx("size-2 rounded-full", busy ? "bg-accent pulse-ring" : "bg-mute")} />
@@ -74,7 +80,7 @@ export function ScreenPane({
                     <Pause className="size-3.5" /> Pause
                   </Button>
                 )}
-                <Button size="sm" variant="primary" onClick={() => setTakeover(true)} disabled={!frame}>
+                <Button size="sm" variant="primary" onClick={takeOver} disabled={!frame}>
                   <Maximize2 className="size-3.5" /> Take over
                 </Button>
               </span>
@@ -83,13 +89,14 @@ export function ScreenPane({
         )}
       </div>
 
-      {takeover && frame && <TakeOver on={target} points={points} busy={busy} agentLabel={agentLabel} onPause={onPause} onDone={() => setTakeover(false)} />}
+      {takeover && <TakeOver on={target} screen={screen} points={points} busy={busy} agentLabel={agentLabel} onPause={onPause} onDone={() => setTakeover(false)} />}
     </section>
   )
 }
 
 function TakeOver({
   on,
+  screen,
   points,
   busy,
   agentLabel,
@@ -97,23 +104,26 @@ function TakeOver({
   onDone,
 }: {
   on: string
+  screen: Screen
   points?: readonly AgentPoint[]
   busy: boolean
   agentLabel: string
   onPause?: () => void
   onDone: () => void
 }) {
-  const { frame } = useScreen(on)
+  const { frame, error } = screen
   // Fit the whole screen in the window: width limited by both viewport width and height.
   const ratio = (frame?.width ?? 1280) / (frame?.height ?? 800)
   const fit = `min(1500px, calc(100vw - 48px), calc((100vh - 120px) * ${ratio.toFixed(4)}))`
   useEffect(() => {
-    const esc = (e: globalThis.KeyboardEvent) => e.key === "Escape" && e.shiftKey && onDone()
+    const esc = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape" && e.shiftKey) onDone()
+    }
     window.addEventListener("keydown", esc)
     return () => window.removeEventListener("keydown", esc)
   }, [onDone])
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#030403]/95 p-6 backdrop-blur-xl">
+    <div data-takeover="" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-[#030403]/95 p-6 backdrop-blur-xl">
       <div className="flex items-center gap-3" style={{ width: fit }}>
         <span className="inline-flex items-center gap-2 rounded-full bg-accent px-3.5 py-1.5 text-[13px] font-bold text-accent-ink">
           <Hand className="size-3.5" /> You have control of {label(on)}
@@ -131,7 +141,7 @@ function TakeOver({
         </div>
       </div>
       <div style={{ width: fit }}>
-        <LiveScreen on={on} frame={frame} points={points} interactive className="shadow-[0_30px_120px_-30px_rgba(62,227,155,.35)]" />
+        <LiveScreen on={on} frame={frame} error={error} points={points} interactive className="shadow-[0_30px_120px_-30px_rgba(62,227,155,.35)]" />
       </div>
     </div>
   )

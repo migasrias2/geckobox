@@ -1,4 +1,4 @@
-import { Globe2, Plus, Server } from "lucide-react"
+import { GeckoIcon } from "./GeckoIcon"
 import type { Computer, Thread } from "../lib/api"
 import { ago, AGENT_LABEL, isBusy, title } from "../lib/format"
 import { Gecko, moodOf } from "./Gecko"
@@ -88,15 +88,15 @@ export function Sidebar({
             view.kind === "new" ? "bg-accent text-accent-ink" : "bg-raised text-ink hover:bg-hover",
           )}
         >
-          <Plus className="size-4" /> New thread
+          <GeckoIcon name="new" size={28} className="-ml-1.5" /> New thread
           <span className="ml-auto grid size-5 place-items-center rounded-md bg-black/15 font-mono text-[10.5px] opacity-70">N</span>
         </button>
         <div className="mt-2 space-y-0.5">
-          <NavItem active={view.kind === "everywhere"} onClick={() => onView({ kind: "everywhere" })} icon={<Globe2 className="size-4" />} label="Run everywhere" />
+          <NavItem active={view.kind === "everywhere"} onClick={() => onView({ kind: "everywhere" })} icon={<GeckoIcon name="globe" size={26} className="-ml-1" />} label="Run everywhere" />
           <NavItem
             active={view.kind === "computers"}
             onClick={() => onView({ kind: "computers" })}
-            icon={<Server className="size-4" />}
+            icon={<GeckoIcon name="server" size={26} className="-ml-1" />}
             label="Computers"
             badge={computers?.length}
           />
@@ -112,7 +112,10 @@ export function Sidebar({
             ))}
           </div>
         ) : open.length === 0 && closed.length === 0 ? (
-          <p className="px-3 text-[13px] leading-relaxed text-mute">No threads yet. Start one and it shows up here.</p>
+          <div className="flex items-center gap-3 px-3 py-2">
+            <GeckoIcon name="peek" size={44} />
+            <p className="text-[13px] leading-relaxed text-mute">No bots yet. Start one and it shows up here.</p>
+          </div>
         ) : (
           <div className="space-y-0.5">
             {open.map((t) => (

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { api, type AgentInfo, type AgentName, type Computer, type Thread } from "../lib/api"
 import { AGENT_LABEL } from "../lib/format"
+import { GeckoIcon } from "./GeckoIcon"
 import { Composer, MODELS } from "./Composer"
 import { Select, Toggle } from "./ui"
 
@@ -93,7 +94,9 @@ export function NewThread({
         </div>
 
         <div className="mt-10">
-          <div className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-mute">Try</div>
+          <div className="mb-3 flex items-center gap-2 text-[12px] font-bold text-mute">
+            <GeckoIcon name="idea" size={28} /> Try
+          </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {IDEAS.map((text) => (
               <button

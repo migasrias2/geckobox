@@ -1,7 +1,8 @@
-import { Box, Play, Plus, Square, Trash2 } from "lucide-react"
+import { Play, Plus, Square, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { api, type AgentName, type Sandbox } from "../lib/api"
 import { AGENT_LABEL } from "../lib/format"
+import { GeckoIcon } from "./GeckoIcon"
 import { usePoll } from "../lib/hooks"
 import { Button, Card, cx, Skeleton } from "./ui"
 
@@ -36,7 +37,7 @@ export function Sandboxes({ onChanged }: { onChanged: () => void }) {
     <Card className="mt-7 overflow-hidden">
       <div className="border-b border-line bg-[radial-gradient(ellipse_at_top_left,rgba(52,211,153,0.10),transparent_60%)] p-5">
         <div className="flex items-center gap-2">
-          <Box className="size-4 text-accent" />
+          <GeckoIcon name="terminal" size={30} className="-my-1" />
           <h2 className="text-[15px] font-semibold">Sandboxes on this Mac</h2>
           {data?.runtime && <span className="ml-auto rounded-full bg-raised px-2.5 py-0.5 text-[11.5px] text-dim">{RUNTIME_LABEL[data.runtime]}</span>}
         </div>

@@ -1,17 +1,18 @@
-import { Box, Check, Cloud, Laptop, Monitor, Plus, Server, Trash2, X } from "lucide-react"
+import { Check, Monitor, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { api, type Computer, type ComputerTest } from "../lib/api"
+import { GeckoIcon } from "./GeckoIcon"
 import { ScreenPane } from "./ScreenPane"
 import { Sandboxes } from "./Sandboxes"
 import { Button, Card, cx } from "./ui"
 
 const KINDS = [
-  { kind: "ssh", label: "SSH", icon: Server, hint: "user@host or a Tailscale name", prefix: "ssh:" },
-  { kind: "docker", label: "Docker", icon: Box, hint: "container name", prefix: "docker:" },
-  { kind: "cua", label: "Cua sandbox", icon: Cloud, hint: "sandbox name, e.g. local:desk", prefix: "cua:" },
+  { kind: "ssh", label: "SSH", icon: "server" as const, hint: "user@host or a Tailscale name", prefix: "ssh:" },
+  { kind: "docker", label: "Docker", icon: "terminal" as const, hint: "container name", prefix: "docker:" },
+  { kind: "cua", label: "Cua sandbox", icon: "cloud" as const, hint: "sandbox name, e.g. local:desk", prefix: "cua:" },
 ] as const
 
-const ICON = { local: Laptop, ssh: Server, container: Box, docker: Box, podman: Box, cua: Cloud } as const
+const ICON = { local: "laptop", ssh: "server", container: "terminal", docker: "terminal", podman: "terminal", cua: "cloud" } as const
 
 export function Computers({ computers, onChanged }: { computers: readonly Computer[] | undefined; onChanged: () => void }) {
   const [viewing, setViewing] = useState<string | undefined>()
@@ -39,7 +40,6 @@ export function Computers({ computers, onChanged }: { computers: readonly Comput
 function ComputerCard({ computer, onView, onRemoved }: { computer: Computer; onView: () => void; onRemoved: () => void }) {
   const [test, setTest] = useState<ComputerTest | undefined>()
   const [testing, setTesting] = useState(false)
-  const Icon = ICON[computer.kind]
   const run = async () => {
     setTesting(true)
     try {
@@ -54,7 +54,7 @@ function ComputerCard({ computer, onView, onRemoved }: { computer: Computer; onV
     <Card className="rise p-4">
       <div className="flex items-center gap-3.5">
         <span className="grid size-11 place-items-center rounded-2xl border border-line bg-raised">
-          <Icon className="size-5 text-accent" />
+          <GeckoIcon name={ICON[computer.kind]} size={40} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[14.5px] font-medium">{computer.name === "local" ? "This machine" : computer.name}</div>
@@ -130,7 +130,7 @@ function AddComputer({ onAdded }: { onAdded: () => void }) {
               k.kind === kind.kind ? "bg-accent/12 text-accent ring-1 ring-accent/30" : "text-dim hover:bg-hover hover:text-ink",
             )}
           >
-            <k.icon className="size-3.5" /> {k.label}
+            <GeckoIcon name={k.icon} size={22} className="-ml-1" /> {k.label}
           </button>
         ))}
       </div>

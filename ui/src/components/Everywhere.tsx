@@ -1,4 +1,5 @@
-import { Check, CircleAlert, Globe2 } from "lucide-react"
+import { Check, CircleAlert } from "lucide-react"
+import { GeckoIcon } from "./GeckoIcon"
 import { useState } from "react"
 import { api, type AgentName, type Computer, type Thread } from "../lib/api"
 import { usePoll } from "../lib/hooks"
@@ -18,7 +19,7 @@ export function Everywhere({ computers, onOpen }: { computers: readonly Computer
     <div className="panel h-full min-w-0 flex-1 overflow-y-auto">
       <div className="mx-auto max-w-4xl px-6 py-10">
         <div className="flex items-center gap-2 text-accent">
-          <Globe2 className="size-5" />
+          <GeckoIcon name="globe" size={30} />
           <span className="text-[12px] font-semibold uppercase tracking-[0.12em]">Fan out</span>
         </div>
         <h1 className="mt-2 text-[26px] font-semibold tracking-tight">Run one job on every computer</h1>

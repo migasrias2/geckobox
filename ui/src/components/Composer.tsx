@@ -24,7 +24,7 @@ const SLASH = [
   { name: "disk", text: "Check disk space and the biggest folders" },
 ] as const
 
-type MenuKind = "computers" | "slash" | "model"
+type MenuKind = "computers" | "slash" | "model" | "agent"
 interface MenuItem {
   readonly id: string
   readonly label: string
@@ -160,6 +160,9 @@ export function Composer({
   autoFocus = false,
   big = false,
   footer,
+  agents,
+  agent,
+  onAgentChange,
   initial = "",
   computers,
   computer,
@@ -175,6 +178,10 @@ export function Composer({
   autoFocus?: boolean
   big?: boolean
   footer?: ReactNode
+  /** Agent picker shown as a chip in the bottom row (big layout). */
+  agents?: readonly { readonly value: string; readonly label: string; readonly hint?: string }[]
+  agent?: string
+  onAgentChange?: (agent: string) => void
   initial?: string
   computers?: readonly Computer[]
   /** Name of the currently selected computer; shows a chip that opens the @ menu. */
@@ -189,15 +196,19 @@ export function Composer({
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | undefined>()
   const [multi, setMulti] = useState(false)
-  const [open, setOpen] = useState<"computers" | "model" | undefined>()
+  const [open, setOpen] = useState<"computers" | "model" | "agent" | undefined>()
   const modelBtn = useRef<HTMLButtonElement>(null)
-  const [modelAt, setModelAt] = useState<React.CSSProperties | undefined>()
-  // The composer clips overflow, so the model menu is placed by measurement, just above its button.
+  const computerBtn = useRef<HTMLButtonElement>(null)
+  const agentBtn = useRef<HTMLButtonElement>(null)
+  const [anchorAt, setAnchorAt] = useState<React.CSSProperties | undefined>()
+  // The composer clips overflow, so a menu opened from a button is measured into place just above it.
   useLayoutEffect(() => {
-    if (open !== "model" || !modelBtn.current || !root.current) return
+    const btn = open === "model" ? modelBtn.current : open === "agent" ? agentBtn.current : open === "computers" ? computerBtn.current : null
+    if (!btn || !root.current) return setAnchorAt(undefined)
     const r = root.current.getBoundingClientRect()
-    const b = modelBtn.current.getBoundingClientRect()
-    setModelAt({ right: r.right - b.right, bottom: r.bottom - b.top + 8, width: 184 })
+    const b = btn.getBoundingClientRect()
+    const bottom = r.bottom - b.top + 8
+    setAnchorAt(open === "model" ? { right: r.right - b.right, bottom, width: 184 } : { left: b.left - r.left, bottom, width: open === "agent" ? 200 : 240 })
   }, [open])
   const [dismissed, setDismissed] = useState<string | undefined>()
   const [active, setActive] = useState(0)
@@ -245,6 +256,7 @@ export function Composer({
     if (kind === "slash")
       return SLASH.filter((s) => s.name.startsWith(query)).map((s) => ({ id: s.name, label: `/${s.name}`, hint: s.text.replace(/ $/, "…").slice(0, 26) }))
     if (kind === "model") return (models ?? []).map((m) => ({ id: m.label, label: m.label, active: m.value === model }))
+    if (kind === "agent") return (agents ?? []).map((a) => ({ id: a.value, label: a.label, hint: a.hint, active: a.value === agent }))
     return []
   }, [kind, query, computers, computer, models, model])
 
@@ -290,6 +302,8 @@ export function Composer({
       onPickComputer?.(item.id)
     } else if (kind === "slash") {
       replaceToken(SLASH.find((s) => s.name === item.id)?.text ?? "")
+    } else if (kind === "agent") {
+      onAgentChange?.(item.id)
     } else if (kind === "model") {
       const next = models?.find((m) => m.label === item.id)
       onModelChange?.(next?.value)
@@ -419,9 +433,9 @@ export function Composer({
           active={active}
           onActive={setActive}
           onPick={pick}
-          title={kind === "computers" ? "Run on" : kind === "slash" ? "Quick prompts" : "Model"}
-          className={kind === "model" ? "" : "left-0 w-64"}
-          style={kind === "model" ? modelAt : undefined}
+          title={kind === "computers" ? "Run on" : kind === "slash" ? "Quick prompts" : kind === "agent" ? "Agent" : "Model"}
+          className={anchorAt && open === kind ? "" : "left-0 w-64"}
+          style={anchorAt && open === kind ? anchorAt : undefined}
         />
       )}
       <div
@@ -465,16 +479,31 @@ export function Composer({
           />
           {!big && actions}
         </div>
-        {(footer || computerLabel || big) && (
+        {(footer || computerLabel || big || agents) && (
           <div className="relative flex flex-wrap items-center gap-1.5 px-3 pb-3 pt-0.5">
             {hasComputers && computerLabel && (
               <button
                 type="button"
+                ref={computerBtn}
                 onClick={() => setOpen((o) => (o === "computers" ? undefined : "computers"))}
                 className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-dim transition hover:bg-hover hover:text-ink active:scale-[.97]"
               >
                 <Monitor className="size-3.5 text-accent" />
                 on {computerLabel}
+                <ChevronDown className="size-3.5 text-mute" />
+              </button>
+            )}
+            {agents && agents.length > 0 && (
+              <button
+                type="button"
+                ref={agentBtn}
+                disabled={disabled}
+                onClick={() => setOpen((o) => (o === "agent" ? undefined : "agent"))}
+                aria-label="Agent"
+                className="inline-flex h-8 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-dim transition hover:bg-hover hover:text-ink active:scale-[.97] disabled:opacity-50"
+              >
+                {agents.find((a) => a.value === agent)?.label ?? agent}
+                <ChevronDown className="size-3.5 text-mute" />
               </button>
             )}
             {footer}

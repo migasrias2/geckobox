@@ -61,21 +61,13 @@ export function NewThread({
             })
             onStarted(thread)
           }}
-          footer={
-            <select
-              value={agent}
-              onChange={(e) => setAgent(e.target.value as AgentName)}
-              aria-label="Agent"
-              className="h-8 cursor-pointer appearance-none rounded-full bg-transparent px-3 text-[13px] font-semibold text-dim outline-none transition hover:bg-hover hover:text-ink"
-            >
-              {(agents ?? [{ name: "claude-code", binary: "claude", tested: true }]).map((a) => (
-                <option key={a.name} value={a.name}>
-                  {AGENT_LABEL[a.name]}
-                  {a.tested ? "" : " (beta)"}
-                </option>
-              ))}
-            </select>
-          }
+          agents={(agents ?? [{ name: "claude-code", binary: "claude", tested: true }]).map((a) => ({
+            value: a.name,
+            label: AGENT_LABEL[a.name],
+            ...(a.tested ? {} : { hint: "beta" }),
+          }))}
+          agent={agent}
+          onAgentChange={(a) => setAgent(a as AgentName)}
         />
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">

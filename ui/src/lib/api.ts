@@ -117,6 +117,16 @@ export const api = {
     call<{ threads: Array<{ on: string; id?: string; error?: string }> }>("POST", "/fanout", body),
   screen: (on: string, after: number) => call<ScreenFrame>("GET", `/screen?on=${enc(on)}&after=${after}`),
   input: (on: string, input: ScreenInput) => call<{ ok: true }>("POST", "/screen/input", { on, ...input }),
+  transcribe: async (audio: Blob): Promise<{ text: string }> => {
+    const res = await fetch("/api/transcribe", {
+      method: "POST",
+      headers: { "x-openspaces-token": token ?? "", "content-type": audio.type.split(";")[0] || "audio/webm" },
+      body: audio,
+    })
+    const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string }
+    if (!res.ok) throw new ApiError(data.error ?? `Transcription failed (${res.status})`, res.status)
+    return { text: data.text ?? "" }
+  },
   view: (on: string) => call<ViewResult>("POST", "/view", { on }),
   sandboxes: () => call<{ runtime: Sandbox["runtime"] | null; sandboxes: Sandbox[] }>("GET", "/sandboxes"),
   createSandbox: (name: string, agents: AgentName[]) => call<{ sandboxes: Sandbox[] }>("POST", "/sandboxes", { name, agents }),

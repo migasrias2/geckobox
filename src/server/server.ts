@@ -6,6 +6,7 @@ import { HttpError, readJsonBody, sendError, sendJson } from "./http.js"
 import { matchRoute, toHttpError } from "./routes.js"
 import { serveStatic } from "./static.js"
 import { ScreenHub } from "../screenHub.js"
+import { dictationStatus, transcribe } from "./transcribe.js"
 import { ViewManager } from "./views.js"
 
 export interface ServerOptions {
@@ -60,6 +61,12 @@ export async function startServer(options: ServerOptions = {}): Promise<RunningS
     const [path = "/", search = ""] = (req.url ?? "/").split("?", 2)
     if (path === "/api" || path.startsWith("/api/")) {
       if (!hasValidToken(req, token)) throw new HttpError(401, "missing or wrong x-openspaces-token")
+      if (path === "/api/transcribe" && req.method === "POST") return transcribe(req, res)
+      if (path === "/api/transcribe" && req.method === "GET") {
+        res.writeHead(200, { "content-type": "application/json" })
+        res.end(JSON.stringify(await dictationStatus()))
+        return
+      }
       return handleApi(req, res, path, new URLSearchParams(search), views, screens)
     }
     if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "method not allowed")

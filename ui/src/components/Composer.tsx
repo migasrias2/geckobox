@@ -74,6 +74,7 @@ function GlideMenu({
   onPick,
   className,
   title,
+  style,
 }: {
   items: readonly MenuItem[]
   active: number
@@ -81,6 +82,7 @@ function GlideMenu({
   onPick: (i: number) => void
   className?: string
   title?: string
+  style?: React.CSSProperties
 }) {
   const rows = useRef<Array<HTMLButtonElement | null>>([])
   const [box, setBox] = useState<{ top: number; height: number } | undefined>()
@@ -99,10 +101,11 @@ function GlideMenu({
     <div
       role="listbox"
       className={cx(
-        "absolute bottom-full z-30 mb-2 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[20px] border border-line-strong bg-raised p-1.5 shadow-[0_18px_50px_-18px_rgba(0,0,0,.9)]",
+        "absolute z-30 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[18px] border border-line-strong bg-raised p-1.5 shadow-[0_18px_50px_-18px_rgba(0,0,0,.9)]",
+        style ? "" : "bottom-full mb-2",
         className,
       )}
-    >
+     style={style}>
       {title && <div className="px-3 pb-1 pt-1.5 text-[11px] font-semibold text-mute">{title}</div>}
       <div className="relative max-h-64 overflow-y-auto">
         {box && (
@@ -187,6 +190,15 @@ export function Composer({
   const [error, setError] = useState<string | undefined>()
   const [multi, setMulti] = useState(false)
   const [open, setOpen] = useState<"computers" | "model" | undefined>()
+  const modelBtn = useRef<HTMLButtonElement>(null)
+  const [modelAt, setModelAt] = useState<React.CSSProperties | undefined>()
+  // The composer clips overflow, so the model menu is placed by measurement, just above its button.
+  useLayoutEffect(() => {
+    if (open !== "model" || !modelBtn.current || !root.current) return
+    const r = root.current.getBoundingClientRect()
+    const b = modelBtn.current.getBoundingClientRect()
+    setModelAt({ right: r.right - b.right, bottom: r.bottom - b.top + 8, width: 184 })
+  }, [open])
   const [dismissed, setDismissed] = useState<string | undefined>()
   const [active, setActive] = useState(0)
   const [sweep, setSweep] = useState(0)
@@ -359,6 +371,7 @@ export function Composer({
         <button
           type="button"
           disabled={disabled}
+          ref={modelBtn}
           onClick={() => setOpen((o) => (o === "model" ? undefined : "model"))}
           aria-label="Model"
           className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3 text-[13px] font-semibold text-dim transition hover:bg-hover hover:text-ink active:scale-[.97] disabled:opacity-50"
@@ -407,7 +420,8 @@ export function Composer({
           onActive={setActive}
           onPick={pick}
           title={kind === "computers" ? "Run on" : kind === "slash" ? "Quick prompts" : "Model"}
-          className={kind === "model" ? "right-12" : "left-0"}
+          className={kind === "model" ? "" : "left-0 w-64"}
+          style={kind === "model" ? modelAt : undefined}
         />
       )}
       <div

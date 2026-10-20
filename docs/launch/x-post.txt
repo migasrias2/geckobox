@@ -1,0 +1,28 @@
+QUOTE OF: "i'm reverse engineering this, i'm not paying any plan." (x.com/migdoesit)
+
+=== MAIN (recommended) ===
+update: didn't need to reverse engineer it. rebuilt it from scratch instead.
+
+meet geckobox 🦎 every agent gets its own computer, free.
+
+- runs on your own machines, no relay, no session limits
+- watch the agent move live, take over anytime
+- one job on every computer at once
+- claude code, codex, gemini, opencode
+
+open source (MIT) 👇
+
+=== REPLY (link goes here, X pushes posts with links down) ===
+github.com/migasrias2/openspaces
+
+=== SHORTER ALT ===
+said i wouldn't pay for a plan.
+so i built my own. free, open source, unlimited.
+
+your agents, your computers, live screen + take over.
+
+geckobox 🦎
+
+=== MEDIA ===
+1. screen recording: an agent clicking through a browser in the live pane, then you hitting Take over (8-15s)
+2. docs/benefits.png (the free vs paid comparison)

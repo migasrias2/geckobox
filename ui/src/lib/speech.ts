@@ -1,36 +1,11 @@
-/** Thin wrapper over the browser Web Speech API (feature-detected). */
+import { api } from "./api"
 
-interface RecognitionAlternative {
-  readonly transcript: string
-}
-interface RecognitionResult {
-  readonly isFinal: boolean
-  readonly length: number
-  readonly [index: number]: RecognitionAlternative
-}
-interface RecognitionEvent {
-  readonly resultIndex: number
-  readonly results: { readonly length: number; readonly [index: number]: RecognitionResult }
-}
-interface Recognition {
-  continuous: boolean
-  interimResults: boolean
-  lang: string
-  onresult: ((e: RecognitionEvent) => void) | null
-  onerror: ((e: { error: string }) => void) | null
-  onend: (() => void) | null
-  start: () => void
-  stop: () => void
-}
-type RecognitionCtor = new () => Recognition
-
-function ctor(): RecognitionCtor | undefined {
-  if (typeof window === "undefined") return undefined
-  const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor }
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition
-}
-
-export const speechSupported = (): boolean => ctor() !== undefined
+/**
+ * Dictation that runs on this machine: the mic is recorded in the browser and
+ * transcribed by whisper.cpp through the local server (no cloud speech service).
+ */
+export const speechSupported = (): boolean =>
+  typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined"
 
 export interface Dictation {
   readonly start: () => void
@@ -38,47 +13,61 @@ export interface Dictation {
 }
 
 export interface DictationHandlers {
+  /** Status text while recording/transcribing (shown in the placeholder). */
   readonly onInterim: (text: string) => void
   readonly onFinal: (text: string) => void
   readonly onEnd: (error?: string) => void
   readonly lang?: string
 }
 
-/** Returns undefined when the browser has no speech recognition. */
+const MAX_MS = 120_000
+
 export function createDictation(handlers: DictationHandlers): Dictation | undefined {
-  const Ctor = ctor()
-  if (!Ctor) return undefined
-  const rec = new Ctor()
-  rec.continuous = true
-  rec.interimResults = true
-  rec.lang = handlers.lang ?? (typeof navigator !== "undefined" ? navigator.language : "en-US")
-  let failure: string | undefined
-  rec.onresult = (e) => {
-    let interim = ""
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      const result = e.results[i]
-      const text = result?.[0]?.transcript ?? ""
-      if (result?.isFinal) handlers.onFinal(text.trim())
-      else interim += text
+  if (!speechSupported()) return undefined
+  let recorder: MediaRecorder | undefined
+  let stream: MediaStream | undefined
+  let limit: ReturnType<typeof setTimeout> | undefined
+  const chunks: Blob[] = []
+
+  const release = () => {
+    clearTimeout(limit)
+    stream?.getTracks().forEach((t) => t.stop())
+  }
+
+  const finish = async () => {
+    release()
+    const blob = new Blob(chunks, { type: recorder?.mimeType || "audio/webm" })
+    if (blob.size < 1200) return handlers.onEnd()
+    handlers.onInterim("Transcribing…")
+    try {
+      const { text } = await api.transcribe(blob)
+      handlers.onFinal(text)
+      handlers.onEnd()
+    } catch (e) {
+      handlers.onEnd((e as Error).message)
     }
-    handlers.onInterim(interim.trim())
   }
-  rec.onerror = (e) => {
-    if (e.error !== "no-speech" && e.error !== "aborted") failure = e.error
-  }
-  rec.onend = () => {
-    handlers.onInterim("")
-    handlers.onEnd(failure)
-    failure = undefined
-  }
+
   return {
     start: () => {
-      try {
-        rec.start()
-      } catch {
-        handlers.onEnd("Could not start dictation")
-      }
+      void (async () => {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })
+          recorder = new MediaRecorder(stream, MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? { mimeType: "audio/webm;codecs=opus" } : undefined)
+          recorder.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data)
+          recorder.onstop = () => void finish()
+          recorder.start(250)
+          handlers.onInterim("Listening… click the mic again to stop")
+          limit = setTimeout(() => recorder?.state === "recording" && recorder.stop(), MAX_MS)
+        } catch (e) {
+          release()
+          handlers.onEnd((e as Error).name === "NotAllowedError" ? "microphone permission was denied" : (e as Error).message)
+        }
+      })()
     },
-    stop: () => rec.stop(),
+    stop: () => {
+      if (recorder?.state === "recording") recorder.stop()
+      else release()
+    },
   }
 }

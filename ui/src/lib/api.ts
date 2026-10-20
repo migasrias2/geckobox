@@ -1,7 +1,9 @@
 export type AgentName = "claude-code" | "codex" | "gemini" | "opencode" | "shell"
 export type ThreadStatus = "starting" | "running" | "idle" | "failed" | "closed"
 
-export interface Computer { readonly name: string; readonly address: string; readonly kind: "local" | "ssh" | "docker" | "cua" }
+export type ComputerKind = "local" | "ssh" | "container" | "docker" | "podman" | "cua"
+export interface Computer { readonly name: string; readonly address: string; readonly kind: ComputerKind }
+export interface Sandbox { readonly name: string; readonly runtime: "container" | "docker" | "podman"; readonly container: string; readonly state: string }
 export interface AgentInfo { readonly name: AgentName; readonly binary: string; readonly tested: boolean }
 export interface TurnRecord {
   readonly index: number
@@ -99,4 +101,8 @@ export const api = {
   fanout: (body: { computers: string[]; agent: AgentName; prompt: string; autoApprove?: boolean }) =>
     call<{ threads: Array<{ on: string; id?: string; error?: string }> }>("POST", "/fanout", body),
   view: (on: string) => call<ViewResult>("POST", "/view", { on }),
+  sandboxes: () => call<{ runtime: Sandbox["runtime"] | null; sandboxes: Sandbox[] }>("GET", "/sandboxes"),
+  createSandbox: (name: string, agents: AgentName[]) => call<{ sandboxes: Sandbox[] }>("POST", "/sandboxes", { name, agents }),
+  removeSandbox: (name: string) => call<{ sandboxes: Sandbox[] }>("DELETE", `/sandboxes/${enc(name)}`),
+  setSandbox: (name: string, running: boolean) => call<Sandbox>("POST", `/sandboxes/${enc(name)}/${running ? "start" : "stop"}`),
 }

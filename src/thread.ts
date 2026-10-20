@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { z } from "zod"
 import { AGENT_NAMES, getAgent } from "./agents/index.js"
-import { describe, resolveComputer } from "./computers.js"
+import { describe, isIsolated, resolveComputer } from "./computers.js"
 import { isEnvName } from "./shell.js"
 import { appendEvent, loadThread, saveThread, updateThread } from "./store.js"
 import { cleanupRemote, interruptRemote, runTurn, type RunningTurn } from "./turn.js"
@@ -36,7 +36,7 @@ export async function createThread(options: StartOptions): Promise<ThreadState> 
   const computer = await resolveComputer(parsed.on)
   const now = new Date().toISOString()
   // Skipping permission prompts is only the default where the agent is boxed in.
-  const isolated = computer.kind === "docker" || computer.kind === "cua"
+  const isolated = isIsolated(computer)
   const state: ThreadState = {
     id: newId(parsed.agent),
     agent: parsed.agent,
@@ -46,7 +46,7 @@ export async function createThread(options: StartOptions): Promise<ThreadState> 
     deleteOnClose: parsed.deleteOnClose,
     autoApprove: parsed.autoApprove ?? isolated,
     ...(parsed.model ? { model: parsed.model } : {}),
-    forwardEnv: parsed.forwardEnv,
+    forwardEnv: [...new Set([...(computer.forwardEnv ?? []), ...parsed.forwardEnv])],
     status: "starting",
     turns: [{ index: 0, prompt: parsed.prompt, startedAt: now }],
     createdAt: now,

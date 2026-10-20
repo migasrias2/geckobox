@@ -1,5 +1,6 @@
 import type { AgentAdapter } from "./agents/index.js"
 import { REMOTE_ROOT } from "./paths.js"
+import { resolveSecret } from "./secrets.js"
 import { join, quote } from "./shell.js"
 import { capture, invocationFor, start, type Running } from "./transport.js"
 import type { AgentEvent, Computer, ThreadState, TurnResult } from "./types.js"
@@ -82,7 +83,7 @@ export function runTurn(state: ThreadState, adapter: AgentAdapter, prompt: strin
     ...(state.sessionId ? { sessionId: state.sessionId } : {}),
     ...(state.model ? { model: state.model } : {}),
   })
-  const env = Object.fromEntries(state.forwardEnv.map((key) => [key, options.env?.[key] ?? process.env[key]]))
+  const env = Object.fromEntries(state.forwardEnv.map((key) => [key, options.env?.[key] ?? resolveSecret(key)]))
   const events: AgentEvent[] = []
   const stderr: string[] = []
   const emit = (event: AgentEvent): void => {

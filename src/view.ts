@@ -41,6 +41,9 @@ export function viewPlan(computer: Computer, localPort: number, options: ViewOpt
         localPort,
         url: `vnc://127.0.0.1:${localPort}`,
       }
+    case "container":
+    case "podman":
+      return { kind: "self", message: `${computer.container} is a headless sandbox: its work shows up in the thread, there is no desktop to watch.` }
     case "docker":
       // A container's VNC port must be published; connect to it straight away.
       return { kind: "open", url: `vnc://127.0.0.1:${remotePort}` }

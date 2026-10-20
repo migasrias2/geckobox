@@ -1,12 +1,20 @@
 /** Where a thread runs. A name from the registry, or an inline address. */
 export type ComputerRef = string
 
+/** Container runtimes that openspaces drives the same way (`<runtime> exec -i`). */
+export type ContainerRuntime = "container" | "docker" | "podman"
+
+interface Shared {
+  /** Env var names always forwarded to this computer (values come from env or the Keychain). */
+  readonly forwardEnv?: readonly string[]
+}
+
 /** How to reach a computer: every kind just runs a shell script there. */
 export type Computer =
-  | { readonly kind: "local" }
-  | { readonly kind: "ssh"; readonly host: string; readonly options?: readonly string[] }
-  | { readonly kind: "docker"; readonly container: string }
-  | { readonly kind: "cua"; readonly sandbox: string }
+  | (Shared & { readonly kind: "local" })
+  | (Shared & { readonly kind: "ssh"; readonly host: string; readonly options?: readonly string[] })
+  | (Shared & { readonly kind: ContainerRuntime; readonly container: string; readonly user?: string })
+  | (Shared & { readonly kind: "cua"; readonly sandbox: string })
 
 export type AgentName = "claude-code" | "codex" | "gemini" | "opencode" | "shell"
 

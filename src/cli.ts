@@ -15,6 +15,7 @@ import {
   type StartFlags,
 } from "./cli/commands.js"
 import { err, out } from "./cli/format.js"
+import { cmdSandbox, cmdSecrets } from "./cli/sandbox.js"
 import { cmdUi } from "./cli/ui.js"
 import { resolveComputer } from "./computers.js"
 import { freePort, runView, viewPlan } from "./view.js"
@@ -22,7 +23,7 @@ import { freePort, runView, viewPlan } from "./view.js"
 const HELP = `openspaces: put any coding agent on any of your computers.
 
   openspaces computers [ls]                   list computers ("local" is built in)
-  openspaces computers add <name> <address>   address: local | ssh:user@host | docker:name | cua:name
+  openspaces computers add <name> <address>   address: local | ssh:user@host | container|docker|podman:[user@]name | cua:name
   openspaces computers rm <name>
   openspaces computers test [name]            check the computer and which agents it has
 
@@ -38,12 +39,17 @@ const HELP = `openspaces: put any coding agent on any of your computers.
                                               no relay, no session or hour limits; --view-only for cua)
   openspaces ui [--port 4600] [--no-open]     local web UI (127.0.0.1 only, link carries a secret token)
 
+  openspaces sandbox create <name>            an isolated Linux sandbox on this machine with agents installed
+                                              (Apple container, Docker or Podman); then --on <name>
+  openspaces sandbox [ls] | rm | stop | start <name>
+  openspaces secrets set <NAME>               store an agent's token in the macOS Keychain (read from stdin)
+
 options for start and run:
   --on <computer>        where to run (default local; run takes a comma list)
   --agent <name>         ${AGENT_NAMES.join(" | ")} (default claude-code)
   --cwd <abs path>       work in this dir on the computer (default: a fresh dir per thread)
   --keep                 keep the thread's work dir on close (run: leave threads open)
-  --auto-approve         skip the agent's permission prompts (default on docker/cua only)
+  --auto-approve         skip the agent's permission prompts (default on sandboxes/containers/cua)
   --no-auto-approve
   --model <id>           pass a model to the agent
   --env <NAME>           forward this env var to the computer (repeatable)
@@ -67,6 +73,11 @@ async function main(argv: readonly string[]): Promise<number> {
       follow: { type: "boolean", short: "f", default: false },
       help: { type: "boolean", short: "h", default: false },
       port: { type: "string" },
+      agents: { type: "string" },
+      image: { type: "string" },
+      runtime: { type: "string" },
+      cpus: { type: "string" },
+      memory: { type: "string" },
       "view-only": { type: "boolean", default: false },
       open: { type: "boolean", default: true },
     },
@@ -114,6 +125,17 @@ async function main(argv: readonly string[]): Promise<number> {
       return cmdInterrupt(need(rest[0], "interrupt <id>"))
     case "close":
       return cmdClose(need(rest[0], "close <id>"))
+    case "sandbox":
+      return cmdSandbox(rest[0], rest.slice(1), {
+        ...(values.agents !== undefined ? { agents: values.agents.split(",").map((a) => a.trim()).filter(Boolean) as never } : {}),
+        ...(values.image ? { image: values.image } : {}),
+        ...(values.runtime ? { runtime: values.runtime as never } : {}),
+        ...(values.cpus ? { cpus: Number(values.cpus) } : {}),
+        ...(values.memory ? { memoryGb: Number(values.memory) } : {}),
+        ...(values.env.length ? { forwardEnv: values.env } : {}),
+      })
+    case "secrets":
+      return cmdSecrets(rest[0], rest.slice(1))
     case "view": {
       const computer = await resolveComputer(need(rest[0], "view <computer> [--port 5900]"))
       const plan = viewPlan(computer, await freePort(), {

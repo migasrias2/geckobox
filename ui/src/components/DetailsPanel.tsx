@@ -3,7 +3,7 @@ import type { Thread } from "../lib/api"
 import { ago, AGENT_LABEL, cost, isBusy, title } from "../lib/format"
 import { AgentAvatar, Card, IconButton, Row, SectionLabel, StatusPill } from "./ui"
 
-const KIND_LABEL = { local: "This machine", ssh: "Over SSH", docker: "Docker container", cua: "Cua sandbox" } as const
+const KIND_LABEL = { local: "This machine", ssh: "Over SSH", container: "Sandbox on this Mac", docker: "Docker container", podman: "Podman container", cua: "Cua sandbox" } as const
 
 export function DetailsPanel({
   thread,

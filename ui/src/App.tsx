@@ -17,6 +17,18 @@ export function App() {
   const agents = usePoll(api.agents, 60_000)
 
   useEffect(() => {
+    // A new link (e.g. after restarting `openspaces ui`) only changes the hash: take its token.
+    const onHash = () => {
+      if (/token=/.test(window.location.hash)) {
+        readToken()
+        window.location.reload()
+      }
+    }
+    window.addEventListener("hashchange", onHash)
+    return () => window.removeEventListener("hashchange", onHash)
+  }, [])
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)
       if (!typing && e.key.toLowerCase() === "n" && !e.metaKey && !e.ctrlKey) setView({ kind: "new" })

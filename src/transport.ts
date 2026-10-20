@@ -27,8 +27,14 @@ export function invocationFor(computer: Computer, script: string, env: Readonly<
         args: ["-T", "-o", "BatchMode=yes", ...(computer.options ?? []), "--", computer.host, "sh -l -s"],
         stdin: full,
       }
+    case "container":
     case "docker":
-      return { command: "docker", args: ["exec", "-i", computer.container, "sh", "-l", "-s"], stdin: full }
+    case "podman":
+      return {
+        command: computer.kind,
+        args: ["exec", "-i", ...(computer.user ? ["-u", computer.user] : []), computer.container, "sh", "-l", "-s"],
+        stdin: full,
+      }
     case "cua":
       // `cua sandbox exec` does not forward stdin; it joins args into one `sh -c` line.
       // So here the script, including forwarded env values, is visible in argv (see README, Safety).

@@ -2,6 +2,7 @@ import { Box, Check, Cloud, Laptop, Monitor, Plus, Server, Trash2, X } from "luc
 import { useState } from "react"
 import { api, type Computer, type ComputerTest } from "../lib/api"
 import { DesktopPane } from "./DesktopPane"
+import { Sandboxes } from "./Sandboxes"
 import { Button, Card, cx } from "./ui"
 
 const KINDS = [
@@ -10,7 +11,7 @@ const KINDS = [
   { kind: "cua", label: "Cua sandbox", icon: Cloud, hint: "sandbox name, e.g. local:desk", prefix: "cua:" },
 ] as const
 
-const ICON = { local: Laptop, ssh: Server, docker: Box, cua: Cloud } as const
+const ICON = { local: Laptop, ssh: Server, container: Box, docker: Box, podman: Box, cua: Cloud } as const
 
 export function Computers({ computers, onChanged }: { computers: readonly Computer[] | undefined; onChanged: () => void }) {
   const [viewing, setViewing] = useState<string | undefined>()
@@ -22,6 +23,8 @@ export function Computers({ computers, onChanged }: { computers: readonly Comput
         <p className="mt-1.5 text-[14px] text-dim">
           Anything that can run a shell is a computer. openspaces connects to them directly — no relay, so no hour or session limits.
         </p>
+        <Sandboxes onChanged={onChanged} />
+        <h2 className="mt-10 text-[15px] font-semibold">Your computers</h2>
         <AddComputer onAdded={onChanged} />
         <div className="mt-6 space-y-3">
           {(computers ?? []).map((c) => (
@@ -116,7 +119,7 @@ function AddComputer({ onAdded }: { onAdded: () => void }) {
     }
   }
   return (
-    <Card className="mt-7 p-4">
+    <Card className="mt-3 p-4">
       <div className="flex gap-1.5">
         {KINDS.map((k) => (
           <button

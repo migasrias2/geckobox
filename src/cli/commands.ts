@@ -23,7 +23,7 @@ export async function waitIdle(id: string): Promise<ThreadState> {
 export async function cmdComputers(sub: string | undefined, args: readonly string[]): Promise<number> {
   if (sub === "add") {
     const [name, address] = args
-    if (!name || !address) throw new Error("usage: openspaces computers add <name> <local|ssh:user@host|docker:name|cua:name>")
+    if (!name || !address) throw new Error("usage: openspaces computers add <name> <local|ssh:user@host|container:name|docker:name|podman:name|cua:name>")
     await addComputer(name, address)
     out(`added ${name} → ${address}`)
     return 0

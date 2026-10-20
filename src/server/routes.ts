@@ -3,6 +3,7 @@ import { z, ZodError } from "zod"
 import { AGENT_NAMES, AGENTS } from "../agents/index.js"
 import { addComputer, describe, loadRegistry, removeComputer, resolveComputer } from "../computers.js"
 import { probeComputer } from "../probe.js"
+import { createSandbox, detectRuntime, listSandboxes, removeSandbox, setSandboxRunning } from "../sandbox.js"
 import { eventsFile, listThreads } from "../store.js"
 import { closeThread, createThread, interruptThread, queueTurn, threadStatus } from "../thread.js"
 import type { AgentName, ThreadState } from "../types.js"
@@ -49,6 +50,7 @@ const fanoutBody = z.object({
   autoApprove: z.boolean().optional(),
 })
 const viewBody = z.object({ on: text })
+const sandboxBody = z.object({ name: text, agents: z.array(agentName).optional(), image: z.string().optional() })
 
 type StartInput = Omit<z.infer<typeof startBody>, "keep"> & { readonly keep?: boolean }
 
@@ -65,8 +67,9 @@ export function toHttpError(error: unknown): HttpError {
   if (error instanceof HttpError) return error
   if (error instanceof ZodError) return new HttpError(400, error.issues[0]?.message ?? "invalid input")
   const message = error instanceof Error ? error.message : String(error)
-  if (/^No (thread|computer)|^Invalid thread id/.test(message)) return new HttpError(404, message)
-  if (/still working|is closed/.test(message)) return new HttpError(409, message)
+  if (/^No (thread|computer|sandbox)|^Invalid thread id/.test(message)) return new HttpError(404, message)
+  if (/still working|is closed|already exists/.test(message)) return new HttpError(409, message)
+  if (/^No container runtime|is not installed/.test(message)) return new HttpError(412, message)
   if (/^(Invalid|Unknown|"local")|is empty/.test(message)) return new HttpError(400, message)
   return new HttpError(500, message)
 }
@@ -179,6 +182,20 @@ export const ROUTES: readonly Route[] = [
   post(`/api/threads/${ID}/close`, async ({ params }) => closeThread(params[0]!)),
   post("/api/fanout", async ({ body }) => fanout(parse(fanoutBody, body))),
   post("/api/view", async ({ body, views }) => views.open(parse(viewBody, body).on)),
+  get("/api/sandboxes", async () => ({
+    runtime: await detectRuntime().catch(() => null),
+    sandboxes: await listSandboxes(),
+  })),
+  post("/api/sandboxes", async ({ body }) => {
+    const { name, agents, image } = parse(sandboxBody, body)
+    await createSandbox({ name, ...(agents ? { agents } : {}), ...(image ? { image } : {}) })
+    return { sandboxes: await listSandboxes() }
+  }),
+  route("DELETE", `/api/sandboxes/${ID}`, false, async ({ params }) => {
+    await removeSandbox(params[0]!)
+    return { sandboxes: await listSandboxes() }
+  }),
+  post(`/api/sandboxes/${ID}/(start|stop)`, async ({ params }) => setSandboxRunning(params[0]!, params[1] === "start")),
 ]
 
 export interface Match {

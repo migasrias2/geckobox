@@ -9,7 +9,7 @@ The "bring your own computer" idea from [Cua Spaces](https://x.com/trycua/status
 - **Account:** Cua needs one for remote use. openspaces needs none.
 - **Licence:** Cua is FSL-1.1. openspaces is MIT.
 
-Cua meters its relay. openspaces has no relay: it reaches your computers directly over SSH (works great with [Tailscale](https://tailscale.com) for machines behind NAT), Docker, or a local Cua sandbox, so there is nothing to meter. It is an independent clean-room implementation, not affiliated with Cua; none of its code comes from Cua.
+Cua meters its relay. openspaces has no relay: it reaches your computers directly. They can be sandboxes it creates on your own machine, any box over SSH ([Tailscale](https://tailscale.com) handles NAT), Docker, or a Cua sandbox. With no middleman there is nothing to meter. It is an independent clean-room implementation, not affiliated with Cua; none of its code comes from Cua.
 
 ![openspaces dashboard: a Claude Code thread on this Mac](docs/thread.jpg)
 
@@ -49,13 +49,32 @@ await bot.close()
 
 Change `on: "local"` to the name of another of your computers and the job runs there instead.
 
+## Sandboxes on your own machine
+
+```sh
+brew install container && container system start   # macOS 26: Apple's open-source runtime (or use Docker/Podman)
+openspaces sandbox create dev                       # ~20 s: an isolated Linux VM with Claude Code installed
+openspaces start --on dev "clone my repo and fix the failing test"
+```
+
+Each sandbox is its own lightweight VM with Apple's `container` runtime, or a container with Docker or Podman. The agent runs inside as an unprivileged `agent` user with permission prompts skipped. It can do anything inside the box and nothing outside it. `--agents claude-code,codex,gemini,opencode` picks what gets installed, and `--cpus` / `--memory` size it. `openspaces sandbox ls | stop | start | rm` manages them. The app has a "Sandboxes on this Mac" panel that does the same.
+
+**Logging the agent in:** a sandbox forwards the agent's login variable (`CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` for Claude Code) from your shell, or from the macOS Keychain:
+
+```sh
+claude setup-token                                  # prints a long-lived subscription token
+openspaces secrets set CLAUDE_CODE_OAUTH_TOKEN      # paste it; stored in the Keychain (account "openspaces")
+```
+
+Secrets reach the sandbox over stdin, never in argv, and are never written to openspaces' state or logs.
+
 ## How it works
 
 A **computer** is anything that can run a shell script:
 
 - `local`: this machine
 - `ssh:user@host`: any machine you can SSH into (Mac mini, VPS, your own AWS/GCP/Azure box)
-- `docker:container`: a running container
+- `container:[user@]name`, `docker:…`, `podman:…`: a running container (sandboxes register themselves this way)
 - `cua:sandbox`: a [Cua](https://github.com/trycua/cua) sandbox, through `cua sandbox exec`
 
 A **thread** is one agent conversation on one computer. Each turn runs the agent headless in its own work dir on that computer (`~/.openspaces/work/<thread>`). The agent's session id is saved, so the next message resumes the same conversation. Thread state lives in `~/.openspaces/threads/` on the machine you drive it from. There is nothing to install on the target except the agent CLI itself. No daemon, no account, no relay.

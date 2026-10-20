@@ -2,6 +2,8 @@
 
 <sub>The command-line tool and SDK are called `openspaces`.</sub>
 
+**New here? Read the [tutorial with screenshots](docs/TUTORIAL.md).**
+
 Put Claude Code, Codex or any coding agent on a computer you choose, and run jobs across all your computers at once. **Free, with no limits.**
 
 The "bring your own computer" idea from [Cua Spaces](https://x.com/trycua/status/2112228154651881479), without the meter:
